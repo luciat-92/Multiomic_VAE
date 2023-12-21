@@ -7,8 +7,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=2
-#SBATCH --output=train_%j.out.log
-#SBATCH --error=train_%j.err.log
+#SBATCH --output=logs/train_%j.out.log
+#SBATCH --error=logs/train_%j.err.log
 #SBATCH --mem=20G
 #SBATCH --gres=gpu:1
 
