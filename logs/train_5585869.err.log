@@ -1,0 +1,51 @@
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+Traceback (most recent call last):
+  File "/home/lucia.trastulla/workspace/Multiomic_VAE/code/train_codeae.py", line 197, in <module>
+    main(args=args, update_params_dict=param_dict)
+  File "/home/lucia.trastulla/workspace/Multiomic_VAE/code/train_codeae.py", line 129, in main
+    s_dataloaders, t_dataloaders = data_preproc.get_unlabeled_dataloaders(
+  File "/home/lucia.trastulla/workspace/Multiomic_VAE/code/data_preproc.py", line 94, in get_unlabeled_dataloaders
+    train_xena_df, test_xena_df = train_test_split(
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 214, in wrapper
+    return func(*args, **kwargs)
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 2670, in train_test_split
+    train, test = next(cv.split(X=arrays[0], y=stratify))
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 1746, in split
+    for train, test in self._iter_indices(X, y, groups):
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 2147, in _iter_indices
+    raise ValueError(
+ValueError: The least populated class in y has only 1 member, which is too few. The minimum number of groups for any class cannot be less than 2.
+Traceback (most recent call last):
+  File "/home/lucia.trastulla/workspace/Multiomic_VAE/code/train_codeae.py", line 197, in <module>
+    main(args=args, update_params_dict=param_dict)
+  File "/home/lucia.trastulla/workspace/Multiomic_VAE/code/train_codeae.py", line 129, in main
+    s_dataloaders, t_dataloaders = data_preproc.get_unlabeled_dataloaders(
+  File "/home/lucia.trastulla/workspace/Multiomic_VAE/code/data_preproc.py", line 94, in get_unlabeled_dataloaders
+    train_xena_df, test_xena_df = train_test_split(
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/utils/_param_validation.py", line 214, in wrapper
+    return func(*args, **kwargs)
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 2670, in train_test_split
+    train, test = next(cv.split(X=arrays[0], y=stratify))
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 1746, in split
+    for train, test in self._iter_indices(X, y, groups):
+  File "/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/sklearn/model_selection/_split.py", line 2147, in _iter_indices
+    raise ValueError(
+ValueError: The least populated class in y has only 1 member, which is too few. The minimum number of groups for any class cannot be less than 2.
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+/home/lucia.trastulla/miniforge3/envs/VAE_momics_v2/lib/python3.9/site-packages/umap/umap_.py:1943: UserWarning: n_jobs value -1 overridden to 1 by setting random_state. Use no seed for parallelism.
+  warn(f"n_jobs value {self.n_jobs} overridden to 1 by setting random_state. Use no seed for parallelism.")
+slurmstepd: error: *** JOB 5585869 ON gnode12 CANCELLED AT 2023-12-04T20:24:54 ***
+slurmstepd: error: _cgroup_procs_check: failed on path /sys/fs/cgroup/memory/slurm/uid_3101/job_5585869/step_batch/cgroup.procs: No such file or directory
+slurmstepd: error: unable to read '/sys/fs/cgroup/memory/slurm/uid_3101/job_5585869/step_batch/cgroup.procs'
