@@ -15,3 +15,13 @@ mamba install -c plotly plotly=5.18.0
 mamba install -c conda-forge python-kaleido
 mamba env export | grep -v "prefix" > environment.yml # to export 
 ```
+
+## Structure:
+- `data/`: contains the data used for training and testing
+- `models/`: contains files for the model architecture
+- `saved_models/`: contains the saved model
+- `utils/`: contains utility functions for configuration, logging, and visualization
+- `training/`: contains training and evaluation scripts
+- `tests/`: contains unit tests
+- `scripts/`: contains bash scripts for running experiments
+- `experiments/`: each subdirectory corresponds to a different experiment or model variation
