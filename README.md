@@ -18,10 +18,18 @@ mamba env export | grep -v "prefix" > environment.yml # to export
 
 ## Structure:
 - `data/`: contains the data used for training and testing
+- `experiments/`: each subdirectory corresponds to a different experiment or model variation
 - `models/`: contains files for the model architecture
-- `saved_models/`: contains the saved model
-- `utils/`: contains utility functions for configuration, logging, and visualization
-- `training/`: contains training and evaluation scripts
+- `utils/`: contains utility functions for configuration, logging, and visualization and additional utilities (e.g. seed fixing)
+- `train/`: contains training and evaluation scripts
 - `tests/`: contains unit tests
 - `scripts/`: contains bash scripts for running experiments
-- `experiments/`: each subdirectory corresponds to a different experiment or model variation
+
+## Usage:
+1. *data preparation*:
+    - python data/preprocessing_gex.py: preprocess the data and save it in data/processed/ (this is done only once)
+    - data/datasets.py contains utility functions for loading the data
+2. *training*:
+    - python train/training.py
+    # TODO: save error (each loss type, across all epochs), save same but on test set, add timings
+
