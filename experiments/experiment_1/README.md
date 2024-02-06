@@ -12,7 +12,7 @@ python train/training.py \
 ```
 
 ## Run with sbatch
-All the different settings are tested
+To run all the configurations (samples / feature normalization / n. of genes) use:
 ```bash
 sbatch scripts/train_ae_gan.sbatch
 ```
