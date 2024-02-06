@@ -66,6 +66,8 @@ def plot_histories_gan(histories,
                    pretrain_num_epochs, 
                    train_num_epochs):
     
+    safe_create_dir(save_folder)
+    
     # plot error pretrain adversarial network
     plot_training_loss(histories[0]['loss'], pretrain_num_epochs, save_folder = save_folder, custom_label="Recons and Ortho (Pretrain)",)
     plot_training_loss(histories[0]['recons_loss'], pretrain_num_epochs, save_folder = save_folder, custom_label="Recons (Pretrain)")
