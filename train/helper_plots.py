@@ -22,13 +22,13 @@ def plot_training_loss(minibatch_losses,
     ax1.set_xlabel('Iterations')
     ax1.set_ylabel('Loss')
 
-    #if len(minibatch_losses) < 1000:
-    #    num_losses = len(minibatch_losses) // 2
-    #else:
-    #    num_losses = 1000
+    if len(minibatch_losses) < 100:
+        num_losses = len(minibatch_losses) // 2
+    else:
+        num_losses = 100
 
     ax1.set_ylim([
-        min(0, np.min(minibatch_losses[:])*1.01), np.max(minibatch_losses[:])*1.01
+        min(0, np.min(minibatch_losses[num_losses:])*1.01), np.max(minibatch_losses[num_losses:])*1.01
         ])
 
     ax1.plot(np.convolve(minibatch_losses,
