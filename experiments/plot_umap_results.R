@@ -3,11 +3,12 @@ library(ggplot2)
 library(dplyr)
 library(tidyverse)
 library(RColorBrewer)
+library(ggpubr)
 
 # load results
 setwd("/Volumes/iorio/lucia/Multiomic_VAE/")
 
-folder_model <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False_only_shared_True/"
+folder_model <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False/"
 umap_df <- read_csv(sprintf("%s/plots/umap.csv", folder_model))
 depmap_sample_df <- read_csv("/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv")
 enc_df <- read_csv(sprintf("%s/encoded_features.csv", folder_model))
@@ -19,7 +20,8 @@ umap_df <- umap_df %>%
   mutate(study = ifelse(study == "CL_depmap", "Cell Line - DepMap", paste0("Tissue - ", study))) %>%
   filter(!is.na(site))
 
-pl <- ggplot(subset(umap_df), aes(x = umap_1, y = umap_2, color = study, size = type)) + 
+pl1 <- ggplot(subset(umap_df), 
+             aes(x = umap_1, y = umap_2, color = study, size = type)) + 
   geom_point(alpha = 0.5) +
   scale_size_manual(values = c(0.2, 1)) +
   scale_color_manual(values = c("#e8702a", "#6bd2db", "#9ed670", "#0c457d")) +
@@ -35,8 +37,8 @@ pl <- ggplot(subset(umap_df), aes(x = umap_1, y = umap_2, color = study, size = 
   xlab("UMAP 1") +
   ylab("UMAP 2") +
   guides(size = 'none')
-pl
-ggsave(sprintf("%s/plots/umap_study_ggplot2.png", folder_model), pl, width = 6, height = 6)
+pl1
+ggsave(sprintf("%s/plots/umap_study_ggplot2.png", folder_model), pl1, width = 6, height = 6)
 
 # select random colors
 n_colors <- length(unique(umap_df$site))
@@ -44,7 +46,7 @@ all_c <- colors()
 set.seed(12344)
 colors <- sample(all_c[!grepl("grey", all_c) & !grepl("gray", all_c)], n_colors)
 
-pl <- ggplot(umap_df, 
+pl2 <- ggplot(subset(umap_df), 
              aes(x = umap_1, y = umap_2, size = type)) + 
   geom_point(aes(fill = site, color = type), shape = 21, alpha = 0.8) + 
   scale_size_manual(values = c(0.7, 1)) +
@@ -61,8 +63,9 @@ pl <- ggplot(umap_df,
   xlab("UMAP 1") +
   ylab("UMAP 2") + 
   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
-pl
-ggsave(sprintf("%s/plots/umap_site_ggplot2.png", folder_model), pl, width = 8, height = 6.2)
+pl2
+ggsave(sprintf("%s/plots/umap_site_ggplot2.png", folder_model), pl2, width = 8, height = 6.2)
+ggarrange(plotlist = list(pl1, pl2), nrow = 1)
 
 # # compute correlation among encoded features
 # cor_enc_df <- cor(t(enc_df[, -1]))
@@ -262,7 +265,7 @@ df_auc_site <- do.call(rbind, df_auc_site)
 df_auc_study <- do.call(rbind, df_auc_study)
 df_auc_type <- do.call(rbind, df_auc_type)
 
-plot_auc_pertissue <- function(df_auc, title_pl, folder_model){
+plot_auc_pertissue <- function(df_auc, title_pl, folder_model, save_csv = TRUE){
   
   # drop NA (not the same site name between tissue and cell lines)
   df_auc <- df_auc[!is.na(df_auc$AUC), ]
@@ -283,6 +286,10 @@ plot_auc_pertissue <- function(df_auc, title_pl, folder_model){
   print(pl)
   ggsave(sprintf("%s/boxplotAUC_CLs_pertissue_%s.pdf", folder_model, gsub(" ", "_", title_pl)), 
          pl, width = 6, height = 4.5)
+  if(save_csv){
+    write.csv(df_auc, sprintf("%s/AUC_CLs_pertissue_%s.csv", folder_model, gsub(" ", "_", title_pl)), 
+              row.names = F)
+  }
   
   if( "sample_type_macro" %in% colnames(df_auc)){
     
@@ -302,6 +309,10 @@ plot_auc_pertissue <- function(df_auc, title_pl, folder_model){
    print(pl2)
    ggsave(sprintf("%s/boxplotAUC_CLs_pertype_%s.pdf", folder_model, gsub(" ", "_", title_pl)), 
           pl2, width =4.56, height = 4.5)
+   if(save_csv){
+     write.csv(df_auc, sprintf("%s/AUC_CLs_pertype_%s.csv", folder_model, gsub(" ", "_", title_pl)), 
+               row.names = F)
+   }
   }
   
 }
@@ -309,4 +320,17 @@ plot_auc_pertissue <- function(df_auc, title_pl, folder_model){
 plot_auc_pertissue(df_auc_site, "Same tissue", sprintf("%s/plots/", folder_model))
 plot_auc_pertissue(df_auc_study, "Same study", sprintf("%s/plots/", folder_model))
 plot_auc_pertissue(df_auc_type, "Same type", sprintf("%s/plots/", folder_model))
+
+# load results
+folder_model_1 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False/"
+folder_model_2 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False_only_shared_True/"
+
+df_auc_site_1 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_type.csv", folder_model_1)) %>%
+  dplyr::mutate(model = "no_only_shared")
+
+df_auc_site_2 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_type.csv", folder_model_2)) %>%
+  mutate(model = "only_shared")
+
+df_auc_site_tot <- rbind(df_auc_site_1, df_auc_site_2)
+boxplot(df_auc_site_tot$AUC ~ df_auc_site_tot$model)
 

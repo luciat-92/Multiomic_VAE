@@ -269,7 +269,6 @@ def train_code_adv(s_dataloaders, t_dataloaders, **kwargs):
     the critic model, and training history for the generator model.
     """
    
-    logger = get_logger()
     s_train_dataloader = s_dataloaders[0]
     s_test_dataloader = s_dataloaders[1]
 
