@@ -18,7 +18,7 @@ import train.helper_train_GAN as train_code_adv
 from utils.logger import setup_logging, get_logger
 
 @timeit
-def main(args, update_params_dict):
+def main(args, update_params_dict, logger=None):
 
     # TODO: use to pass from ae to vae
     #if args.method == 'code_base':
@@ -27,16 +27,8 @@ def main(args, update_params_dict):
     #    train_fn = train_code_adv.train_code_adv
 
     train_fn = train_code_adv.train_code_adv
-
-    # logging
-    logging.getLogger().handlers = [] # to stop logging on the file
-    update_params_dict_log = update_params_dict.copy() # to avoid changing the original dict
-    update_params_dict_log.update({"method": args.method})
-    param_str_log = dict_to_str(update_params_dict_log)
-    print(param_str_log)
-    setup_logging(log_file=f"job_{os.environ.get('SLURM_JOBID')}_train_{param_str_log}.log")
+    
     logger = get_logger()
-
     logger.info(f'current config is {args}')
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f'Using device: {device}')
@@ -86,6 +78,7 @@ def main(args, update_params_dict):
         break
 
     # start unlabeled training
+    logger.info(training_params)
     encoder, historys = train_fn(s_dataloaders=s_dataloaders,
                                  t_dataloaders=t_dataloaders,
                                  **training_params)
@@ -129,6 +122,10 @@ if __name__ == '__main__':
     norm_feat_group.add_argument('--norm_feat', dest='norm_feat', action='store_true')
     norm_feat_group.add_argument('--no-norm_feat', dest='norm_feat', action='store_false')
     parser.set_defaults(norm_feat=True)
+    shared_group = parser.add_mutually_exclusive_group(required=False)
+    shared_group.add_argument('--only_shared', dest='only_shared', action='store_true')
+    shared_group.add_argument('--no-only_shared', dest='only_shared', action='store_false')
+    parser.set_defaults(only_shared=False)
     parser.add_argument('--method', dest='method', nargs='?', default='ae_gan',
                         choices=['ae_gan'])
     
@@ -141,11 +138,22 @@ if __name__ == '__main__':
     params_grid = {
         "samples": [args.samples],
         "ngene": [args.ngene],
-        "norm_feat_flag": [args.norm_feat]
+        "norm_feat_flag": [args.norm_feat], 
+        "only_shared": [args.only_shared]
     }
 
     keys, values = zip(*params_grid.items())
     update_params_dict_list = [dict(zip(keys, v)) for v in itertools.product(*values)]
 
     for param_dict in update_params_dict_list:
+        
+        # logging
+        logging.getLogger().handlers = [] # to stop logging on the file
+        param_dict_log = param_dict.copy() # to avoid changing the original dict
+        param_dict_log.update({"method": args.method})
+        param_str_log = dict_to_str(param_dict_log)
+        print(param_str_log)
+        setup_logging(log_file=f"job_{os.environ.get('SLURM_JOBID')}_train_{param_str_log}.log")
+        logger = get_logger()
+
         main(args=args, update_params_dict=param_dict)

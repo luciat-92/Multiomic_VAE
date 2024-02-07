@@ -5,6 +5,7 @@ from collections import defaultdict
 from models.model_definitions import *
 from train.helper_eval import *
 from train.helper_utils import *
+from utils.logger import *
 
 def dsn_ae_train_step(s_dsnae, t_dsnae, s_batch, t_batch, device, optimizer, history, scheduler=None):
     """
@@ -95,7 +96,7 @@ def compute_gradient_penalty(critic, real_samples, fake_samples, device):
     return gradient_penalty
 
 def critic_dsn_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, optimizer, 
-                          history, scheduler=None, clip=None, gp=None):
+                          history, scheduler=None, clip=None, gp=None, only_shared=False):
     """
     The function `critic_dsn_train_step` trains a critic model using the DSN-AE architecture, 
     with optional gradient penalty and gradient clipping.
@@ -130,6 +131,10 @@ def critic_dsn_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, op
     gradient penalty term in the loss function. The gradient penalty is a regularization term that
     encourages the gradients of the critic network to have a norm of 1. It helps to stabilize the
     training of the critic network
+    :param only_shared: The `only_shared` parameter is a boolean flag that specifies whether to use only
+    the shared part of the encoder for the adversarial training. If set to True, only the shared part of
+    the encoder is used for the adversarial training. If set to False, the entire encoder (private 
+    concatenated with shared) is used
     :return: the updated history dictionary.
     """
     critic.zero_grad()
@@ -142,9 +147,14 @@ def critic_dsn_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, op
     s_x = s_batch[0].to(device)
     t_x = t_batch[0].to(device)
 
-    s_code = s_dsnae.encode(s_x)
-    t_code = t_dsnae.encode(t_x)
 
+    if only_shared:
+        s_code = s_dsnae.s_encode(s_x)
+        t_code = t_dsnae.s_encode(t_x)
+    else:
+        s_code = s_dsnae.encode(s_x)
+        t_code = t_dsnae.encode(t_x)
+    
     loss = torch.mean(critic(t_code)) - torch.mean(critic(s_code))
 
     if gp is not None:
@@ -171,7 +181,7 @@ def critic_dsn_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, op
     return history
 
 
-def gan_dsn_gen_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, optimizer, alpha, history, scheduler=None):
+def gan_dsn_gen_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, optimizer, alpha, history, scheduler=None, only_shared=False):
     """
     The function `gan_dsn_gen_train_step` performs a single training step for a generative adversarial
     network with domain-specific neural autoencoders.
@@ -202,6 +212,10 @@ def gan_dsn_gen_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, o
     to adjust the learning rate during training. It is used to update the learning rate based on a
     predefined schedule. If a scheduler is provided, it will be called after each training step to
     update the learning rate
+    :param only_shared: The `only_shared` parameter is a boolean flag that specifies whether to use only
+    the shared part of the encoder for the adversarial training. If set to True, only the shared part of
+    the encoder is used for the adversarial training. If set to False, the entire encoder (private 
+    concatenated with shared) is used
     :return: the updated history dictionary.
     """
     critic.zero_grad()
@@ -214,8 +228,11 @@ def gan_dsn_gen_train_step(critic, s_dsnae, t_dsnae, s_batch, t_batch, device, o
     s_x = s_batch[0].to(device)
     t_x = t_batch[0].to(device)
 
-    t_code = t_dsnae.encode(t_x)
-
+    if only_shared:
+        t_code = t_dsnae.s_encode(t_x)
+    else:
+        t_code = t_dsnae.encode(t_x)
+    
     optimizer.zero_grad()
     gen_loss = -torch.mean(critic(t_code))
     s_loss_dict = s_dsnae.loss_function(*s_dsnae(s_x))
@@ -252,6 +269,7 @@ def train_code_adv(s_dataloaders, t_dataloaders, **kwargs):
     the critic model, and training history for the generator model.
     """
    
+    logger = get_logger()
     s_train_dataloader = s_dataloaders[0]
     s_test_dataloader = s_dataloaders[1]
 
@@ -287,7 +305,8 @@ def train_code_adv(s_dataloaders, t_dataloaders, **kwargs):
                     norm_flag=kwargs['norm_flag']).to(kwargs['device'])
 
     # used as critic in the GAN training
-    confounding_classifier = MLP(input_dim=kwargs['latent_dim'] * 2,
+    critic_input_dim = kwargs['latent_dim'] if kwargs['only_shared'] else kwargs['latent_dim'] * 2
+    confounding_classifier = MLP(input_dim=critic_input_dim,
                                  output_dim=1,
                                  hidden_dims=kwargs['classifier_hidden_dims'],
                                  dop=kwargs['dop']).to(kwargs['device'])
@@ -369,7 +388,8 @@ def train_code_adv(s_dataloaders, t_dataloaders, **kwargs):
                                                              optimizer=classifier_optimizer,
                                                              history=critic_train_history,
                                                              # clip=0.1,
-                                                             gp=10.0) # gradient penalty set from wGAN with gradient penality paper
+                                                             gp=10.0, # gradient penalty set from wGAN with gradient penality paper
+                                                             only_shared=kwargs['only_shared'])
                 if (step + 1) % 5 == 0: # every 5 steps, update of the encoder/decoder param
                     gen_train_history = gan_dsn_gen_train_step(critic=confounding_classifier,
                                                                s_dsnae=s_dsnae,
@@ -379,7 +399,8 @@ def train_code_adv(s_dataloaders, t_dataloaders, **kwargs):
                                                                device=kwargs['device'],
                                                                optimizer=t_ae_optimizer,
                                                                alpha=1.0,
-                                                               history=gen_train_history)
+                                                               history=gen_train_history, 
+                                                               only_shared=kwargs['only_shared'])
 
         torch.save(s_dsnae.state_dict(), os.path.join(kwargs['model_save_folder'], 'a_s_dsnae.pt'))
         torch.save(t_dsnae.state_dict(), os.path.join(kwargs['model_save_folder'], 'a_t_dsnae.pt'))

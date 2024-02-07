@@ -8,7 +8,8 @@ python train/training.py \
     --folder experiment_1 \
     --gex_feature_file='/group/iorio/lucia/Multiomic_VAE/data/preprocessed/gene_expression_all.csv.gz' \
     --ngene='all' \
-    --no-norm_feat
+    --no-norm_feat \
+    --only_shared
 ```
 
 ## Run with sbatch

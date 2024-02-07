@@ -1,10 +1,13 @@
 from pathlib import Path
+import os, sys
+sys.path.insert(0, os.getcwd())
 import argparse
 import torch
 import random
 import time
 from datetime import datetime
 import numpy as np
+from utils.logger import *
 
 ISO_FORMAT = '%Y-%m-%dT%H:%M:%S.%f'
 
@@ -67,10 +70,11 @@ def timeit(f):
     """
 
     def wrapper(*args, **kwargs):
-        print('Started:', f.__qualname__)
+        logger = get_logger()
+        logger.info(f'Started: {f.__qualname__}')
         t = time.time()
         res = f(*args, **kwargs)
-        print(f'Finished: {f.__qualname__} elapsed: {time.time() - t:.2f}s')
+        logger.info(f'Finished: {f.__qualname__} elapsed: {time.time() - t:.2f}s')
         return res
 
     return wrapper
