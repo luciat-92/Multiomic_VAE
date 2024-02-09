@@ -29,5 +29,6 @@ mamba env export | grep -v "prefix" > environment.yml # to export
 1. *data preparation*:
     - python data/preprocessing_gex.py: preprocess the data and save it in data/processed/ (this is done only once)
 2. *training*:
-    - sbatch scripts/train_ae_gan.sbatch
+    - sbatch scripts/train_ae_gan.sbatch # train with gene expression data and autoencoder
+    - sbatch scripts/train_vae_gan.sbatch # train with gene expression data and variational autoencoder
 

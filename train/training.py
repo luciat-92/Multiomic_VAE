@@ -14,22 +14,25 @@ import utils.config as config
 import data.datasets as data_loader
 from train.helper_plots import *
 from train.helper_utils import *
-import train.helper_train_GAN as train_code_adv
+import train.helper_train_GAN as train_code
 from utils.logger import setup_logging, get_logger
 
 @timeit
-def main(args, update_params_dict, logger=None):
+def main(args, update_params_dict):
 
-    # TODO: use to pass from ae to vae
-    #if args.method == 'code_base':
-    #    train_fn = train_code_base.train_code_base
-    #else:
-    #    train_fn = train_code_adv.train_code_adv
-
-    train_fn = train_code_adv.train_code_adv
-    
     logger = get_logger()
     logger.info(f'current config is {args}')
+
+    if args.method == 'ae_gan':
+        train_fn = train_code.train_code_adv
+        var_flag = False
+    else:
+        if args.method == 'vae_gan':
+            train_fn = train_code.train_code_adv_vae
+            var_flag = True
+        else:
+            logger.error(f'Invalid method: {args.method}')
+    
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f'Using device: {device}')
 
@@ -95,10 +98,11 @@ def main(args, update_params_dict, logger=None):
     plot_histories_gan(histories = historys, 
                   save_folder = training_params['model_save_folder'] / 'plots/', 
                   pretrain_num_epochs=training_params['pretrain_num_epochs'], 
-                  train_num_epochs=training_params['train_num_epochs'])
+                  train_num_epochs=training_params['train_num_epochs'], 
+                  variational_flag = var_flag)
     
-    enc_depmap = generate_encoded_features(encoder, s_dataloaders)
-    enc_xena = generate_encoded_features(encoder, t_dataloaders)
+    enc_depmap = generate_encoded_features(encoder, s_dataloaders, variational_flag=var_flag)
+    enc_xena = generate_encoded_features(encoder, t_dataloaders, variational_flag=var_flag)
     enc_tot = pd.concat([enc_depmap, enc_xena], axis = 0, sort = False)
     enc_tot.to_csv(training_params['model_save_folder'] / 'encoded_features.csv')
     logger.info(f'Saved new encoded features')
@@ -127,7 +131,7 @@ if __name__ == '__main__':
     shared_group.add_argument('--no-only_shared', dest='only_shared', action='store_false')
     parser.set_defaults(only_shared=False)
     parser.add_argument('--method', dest='method', nargs='?', default='ae_gan',
-                        choices=['ae_gan'])
+                        choices=['ae_gan', 'vae_gan'])
     
     args = parser.parse_args()
     # params_grid = {

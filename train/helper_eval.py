@@ -22,7 +22,7 @@ def auprc(y_true, y_score):
     lr_precision, lr_recall, _ = precision_recall_curve(y_true=y_true, probas_pred=y_score)
     return auc(lr_recall, lr_precision)
 
-def eval_dsnae_epoch(model, data_loader, device, history):
+def eval_dsn_epoch(model, data_loader, device, history):
     """
     The function `eval_dsnae_epoch` evaluates the performance of a model on a given dataset for one
     epoch and updates the loss history.

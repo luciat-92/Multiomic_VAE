@@ -8,7 +8,7 @@ library(ggpubr)
 # load results
 setwd("/Volumes/iorio/lucia/Multiomic_VAE/")
 
-folder_model <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False/"
+folder_model <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False_only_shared_True/"
 umap_df <- read_csv(sprintf("%s/plots/umap.csv", folder_model))
 depmap_sample_df <- read_csv("/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv")
 enc_df <- read_csv(sprintf("%s/encoded_features.csv", folder_model))
@@ -18,7 +18,8 @@ umap_df <- umap_df %>%
   mutate(type = factor(type, levels = c("xena", "depmap"))) %>%
   arrange(type) %>%
   mutate(study = ifelse(study == "CL_depmap", "Cell Line - DepMap", paste0("Tissue - ", study))) %>%
-  filter(!is.na(site))
+  filter(!is.na(site)) %>%
+  rename(sample_type = !!("_sample_type"))
 
 pl1 <- ggplot(subset(umap_df), 
              aes(x = umap_1, y = umap_2, color = study, size = type)) + 
@@ -325,10 +326,10 @@ plot_auc_pertissue(df_auc_type, "Same type", sprintf("%s/plots/", folder_model))
 folder_model_1 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False/"
 folder_model_2 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False_only_shared_True/"
 
-df_auc_site_1 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_type.csv", folder_model_1)) %>%
+df_auc_site_1 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_study.csv", folder_model_1)) %>%
   dplyr::mutate(model = "no_only_shared")
 
-df_auc_site_2 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_type.csv", folder_model_2)) %>%
+df_auc_site_2 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_study.csv", folder_model_2)) %>%
   mutate(model = "only_shared")
 
 df_auc_site_tot <- rbind(df_auc_site_1, df_auc_site_2)

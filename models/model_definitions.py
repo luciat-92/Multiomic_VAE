@@ -241,3 +241,205 @@ class DSNAE(BaseAE):
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         return self.forward(x)[1]
+    
+########### VAE ###########
+class VAE_Encoder(MLP):
+    def __init__(self, input_dim: int, latent_dim: int, hidden_dims: List = None, dop: float = 0.1, act_fn=nn.SELU, out_fn=None, gr_flag=False) -> None:
+        super(VAE_Encoder, self).__init__(input_dim, latent_dim * 2, hidden_dims, dop, act_fn, out_fn, gr_flag)  # Double latent_dim for mean and log_var
+
+    def forward(self, input: Tensor) -> List[Tensor]:
+        output = super().forward(input)
+        mu, log_var = output.chunk(2, dim=1)  # Split output into mean and log_var
+        # Reparameterization trick
+        std = torch.exp(0.5 * log_var)
+        eps = torch.randn_like(std)
+        z = mu + eps * std
+        return [z, mu, log_var]
+
+class VAE_Decoder(MLP):
+    def __init__(self, latent_dim: int, output_dim: int, hidden_dims: List = None, dop: float = 0.1, act_fn=nn.SELU, out_fn=None, gr_flag=False) -> None:
+        super(VAE_Decoder, self).__init__(latent_dim, output_dim, hidden_dims, dop, act_fn, out_fn, gr_flag)
+
+    def forward(self, input: Tensor) -> Tensor:
+        return super().forward(input)
+
+#class VAE_Encoder(nn.Module):
+#    def __init__(self, input_dim, latent_dim):
+#        super(VAE_Encoder, self).__init__(input_dim, latent_dim * 2, hidden_dims=[512, 256], dop=0.1)
+#        self.latent_dim = latent_dim
+#
+#    def __init__(self, input_dim, latent_dim):
+#        super(VAE_Encoder, self).__init__()
+#        self.input_dim = input_dim
+#        self.latent_dim = latent_dim
+#        self.encoder = nn.Sequential(
+#            nn.Linear(input_dim, 512),
+#            nn.ReLU(),
+#            nn.Linear(512, 256),
+#            nn.ReLU()
+#        )
+#        self.z_mean = nn.Linear(256, latent_dim)
+#        self.z_log_var = nn.Linear(256, latent_dim)
+#
+#    def reparameterize(self, mu, log_var):
+#        std = torch.exp(0.5 * log_var)
+#        eps = torch.randn_like(std)
+#        return mu + eps * std
+#
+#    def forward(self, x):
+#        x = self.encoder(x)
+#        mu = self.z_mean(x)
+#        log_var = self.z_log_var(x)
+#        z = self.reparameterize(mu, log_var)
+#        return z, mu, log_var
+
+#class VAE_Decoder(nn.Module):
+#    def __init__(self, latent_dim, output_dim):
+#        super(VAE_Decoder, self).__init__()
+#        self.latent_dim = latent_dim
+#        self.output_dim = output_dim
+#        self.decoder = nn.Sequential(
+#            nn.Linear(latent_dim, 256),
+#            nn.ReLU(),
+#            nn.Linear(256, 512),
+#            nn.ReLU(),
+#            nn.Linear(512, output_dim),
+#            nn.Sigmoid()  # Output between 0 and 1
+#        )
+#
+#    def forward(self, z):
+#        x_recon = self.decoder(z)
+#        return x_recon
+
+# The BaseVAE class is an abstract base class for Variational Autoencoders (VAEs) that defines the
+# basic structure and methods that need to be implemented by subclasses.
+class BaseVAE(nn.Module):
+    def __init__(self) -> None:
+        super(BaseVAE, self).__init__()
+
+    def encode(self, input: Tensor) -> List[Tensor]:
+        raise NotImplementedError
+
+    def reparameterize(self, mu: Tensor, log_var: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def decode(self, input: Tensor) -> List[Tensor]:
+        raise NotImplementedError
+
+    def sample(self, batch_size: int, current_device: int, **kwargs) -> Tensor:
+        raise RuntimeWarning()
+
+    def generate(self, x: Tensor, **kwargs) -> Tensor:
+        raise NotImplementedError
+
+    @abstractmethod
+    def forward(self, *inputs: Tensor) -> Tensor:
+        pass
+
+    @abstractmethod
+    def loss_function(self, *inputs: Any, **kwargs) -> Tensor:
+        pass
+
+class DSNVAE(BaseVAE):
+
+    def __init__(self, shared_encoder, decoder, input_dim: int, latent_dim: int, alpha: float = 1.0,
+                 hidden_dims: List = None, dop: float = 0.1, noise_flag: bool = False, norm_flag: bool = False,
+                 act_fn=nn.SELU, **kwargs) -> None:
+        super(DSNVAE, self).__init__()
+        self.latent_dim = latent_dim
+        self.alpha = alpha
+        self.noise_flag = noise_flag
+        self.dop = dop
+        self.norm_flag = norm_flag
+        self.act_fn = act_fn
+
+        if hidden_dims is None:
+            hidden_dims = [32, 64, 128, 256, 512]
+
+        self.shared_encoder = shared_encoder # shared encoder
+        self.decoder = decoder # shared decoder
+
+        # build private encoder
+        self.private_encoder = VAE_Encoder(input_dim, 
+                                           latent_dim, 
+                                           hidden_dims, 
+                                           dop, 
+                                           act_fn, 
+                                           out_fn=None, 
+                                           gr_flag=False)
+        
+    # remove the normalization flag (?)
+    def p_encode(self, input: Tensor) -> List[Tensor]:
+        latent_code, mu, log_var = self.private_encoder(input)
+        if self.norm_flag:
+            return [F.normalize(latent_code, p=2, dim=1) , mu, log_var]
+        else:
+            return [latent_code, mu, log_var]
+
+    # remove the normalization flag (?)
+    def s_encode(self, input: Tensor) -> List[Tensor]:
+        latent_code, mu, log_var = self.shared_encoder(input)
+        if self.norm_flag:
+            return [F.normalize(latent_code, p=2, dim=1) , mu, log_var]
+        else:
+            return [latent_code, mu, log_var]
+
+    def encode(self, input: Tensor) -> List[Tensor]:
+        p_latent_code = self.p_encode(input)[0] # get only the encoded input
+        s_latent_code = self.s_encode(input)[0] # get only the encoded input
+        return torch.cat((p_latent_code, s_latent_code), dim=1)
+    
+    def decode(self, z: Tensor) -> Tensor:
+        outputs = self.decoder(z)
+        return outputs
+
+    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
+        z = self.encode(input)
+        mu_p = self.p_encode(input)[1] 
+        log_var_p = self.p_encode(input)[2]
+        mu_s = self.s_encode(input)[1]
+        log_var_s = self.s_encode(input)[2]
+        return [input, self.decode(z), z, mu_p, log_var_p, mu_s, log_var_s]
+
+    def loss_function(self, *args, **kwargs) -> dict:
+        input = args[0]
+        recons = args[1]
+        z = args[2]
+        mu_p = args[3]
+        log_var_p = args[4]
+        mu_s = args[5]
+        log_var_s = args[6]
+
+        # reconstruction loss
+        p_z = z[:, :z.shape[1] // 2]
+        s_z = z[:, z.shape[1] // 2:]
+        recons_loss = F.mse_loss(input, recons)
+
+        # orthogonality loss
+        s_l2_norm = torch.norm(s_z, p=2, dim=1, keepdim=True).detach()
+        s_l2 = s_z.div(s_l2_norm.expand_as(s_z) + 1e-6)
+        p_l2_norm = torch.norm(p_z, p=2, dim=1, keepdim=True).detach()
+        p_l2 = p_z.div(p_l2_norm.expand_as(p_z) + 1e-6)
+        ortho_loss = torch.mean((s_l2.t().mm(p_l2)).pow(2)) # frobenioius norm
+
+        # KL divergence
+        kl_div_p = -0.5 * torch.sum(1 + log_var_p - mu_p.pow(2) - log_var_p.exp(), dim=1).detach()
+        kl_div_s = -0.5 * torch.sum(1 + log_var_s - mu_s.pow(2) - log_var_s.exp(), dim=1).detach()
+        #print(kl_div_p.mean()) # explodes! why?
+        #print(kl_div_s.mean())
+        kl_div = kl_div_p.mean() + kl_div_s.mean()
+
+        # total loss
+        loss = recons_loss + self.alpha * ortho_loss + kl_div
+
+        return {'loss': loss, 'recons_loss': recons_loss, 'ortho_loss': ortho_loss, 'kl_div': kl_div}
+
+    # is this necessary? If not remove it
+    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
+        z = torch.randn(num_samples, self.latent_dim)
+        z = z.to(current_device)
+        samples = self.decode(z)
+        return samples
+
+    def generate(self, x: Tensor, **kwargs) -> Tensor:
+        return self.forward(x)[1]

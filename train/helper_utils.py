@@ -41,16 +41,21 @@ def model_save_check(history, metric_name, tolerance_count=5, reset_count=1):
     return save_flag, stop_flag
 
 # different from the original code
-def generate_encoded_features(encoder, dataloader, normalize_flag=False):
+def generate_encoded_features(encoder, dataloader, normalize_flag=False, variational_flag = False):
     encoder.eval()
     raw_feature_tensor = dataloader[0].dataset.tensors[0].cpu()
     sample_info = dataloader[2]
     with torch.no_grad():
-        encoded_feature_tensor = encoder.cpu()(raw_feature_tensor)
+        if variational_flag:
+            encoded_feature_tensor, _, _ = encoder.cpu()(raw_feature_tensor)
+        else:
+            encoded_feature_tensor = encoder.cpu()(raw_feature_tensor)
+
     # in the training, we use the normalization, but in the evaluation, we don't. Correct?
     if normalize_flag:
         encoded_feature_tensor = torch.nn.functional.normalize(encoded_feature_tensor, p=2, dim=1)
     encoded_feature_tensor = encoded_feature_tensor.cpu().detach().numpy()
+    
     enc_out = pd.DataFrame(encoded_feature_tensor, index = sample_info.index)
     return enc_out
 
