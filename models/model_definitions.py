@@ -4,6 +4,7 @@ from torch import nn
 from torch.nn import functional as F
 from torch.autograd import Function
 from abc import abstractmethod
+from train.helper_eval import compute_mmd, compute_kernel
 
 Tensor = TypeVar('torch.tensor') # variable of type Tensor is expected to be a PyTorch tensor
 
@@ -343,8 +344,8 @@ class BaseVAE(nn.Module):
 class DSNVAE(BaseVAE):
 
     def __init__(self, shared_encoder, decoder, input_dim: int, latent_dim: int, alpha: float = 1.0,
-                 hidden_dims: List = None, dop: float = 0.1, noise_flag: bool = False, norm_flag: bool = False,
-                 act_fn=nn.SELU, **kwargs) -> None:
+                 hidden_dims: List = None, dop: float = 0.1, noise_flag: bool = False, norm_flag: bool = False, 
+                 act_fn=nn.SELU, device = 'cpu', **kwargs) -> None:
         super(DSNVAE, self).__init__()
         self.latent_dim = latent_dim
         self.alpha = alpha
@@ -352,6 +353,7 @@ class DSNVAE(BaseVAE):
         self.dop = dop
         self.norm_flag = norm_flag
         self.act_fn = act_fn
+        self.device = device
 
         if hidden_dims is None:
             hidden_dims = [32, 64, 128, 256, 512]
@@ -422,17 +424,25 @@ class DSNVAE(BaseVAE):
         p_l2 = p_z.div(p_l2_norm.expand_as(p_z) + 1e-6)
         ortho_loss = torch.mean((s_l2.t().mm(p_l2)).pow(2)) # frobenioius norm
 
-        # KL divergence
-        kl_div_p = -0.5 * torch.sum(1 + log_var_p - mu_p.pow(2) - log_var_p.exp(), dim=1).detach()
-        kl_div_s = -0.5 * torch.sum(1 + log_var_s - mu_s.pow(2) - log_var_s.exp(), dim=1).detach()
-        #print(kl_div_p.mean()) # explodes! why?
-        #print(kl_div_s.mean())
-        kl_div = kl_div_p.mean() + kl_div_s.mean()
+        # MMD loss
+        true_samples_p=torch.randn(p_z.shape[0], p_z.shape[1]).to(self.device)
+        MMD_p=torch.sum(compute_mmd(true_samples_p, p_z))
+        true_samples_s=torch.randn(s_z.shape[0], s_z.shape[1]).to(self.device)
+        MMD_s=torch.sum(compute_mmd(true_samples_s, s_z))
+        MMD = MMD_p + MMD_s
 
         # total loss
-        loss = recons_loss + self.alpha * ortho_loss + kl_div
+        loss = recons_loss + self.alpha * ortho_loss + MMD
+        ## KL divergence
+        #kl_div_p = -0.5 * torch.sum(1 + log_var_p - mu_p.pow(2) - log_var_p.exp(), dim=1).detach()
+        #kl_div_s = -0.5 * torch.sum(1 + log_var_s - mu_s.pow(2) - log_var_s.exp(), dim=1).detach()
+        ##print(kl_div_p.mean()) # explodes to infinte, why?
+        ##print(kl_div_s.mean())
+        #kl_div = kl_div_p.mean() + kl_div_s.mean()
+        # total loss
+        #loss = recons_loss + self.alpha * ortho_loss + kl_div
 
-        return {'loss': loss, 'recons_loss': recons_loss, 'ortho_loss': ortho_loss, 'kl_div': kl_div}
+        return {'loss': loss, 'recons_loss': recons_loss, 'ortho_loss': ortho_loss, 'MMD_loss': MMD}
 
     # is this necessary? If not remove it
     def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
@@ -443,3 +453,6 @@ class DSNVAE(BaseVAE):
 
     def generate(self, x: Tensor, **kwargs) -> Tensor:
         return self.forward(x)[1]
+
+
+

@@ -665,7 +665,8 @@ def train_code_adv_vae(s_dataloaders, t_dataloaders, **kwargs):
                     latent_dim=kwargs['latent_dim'],
                     hidden_dims=kwargs['encoder_hidden_dims'],
                     dop=kwargs['dop'],
-                    norm_flag=kwargs['norm_flag']).to(kwargs['device'])
+                    norm_flag=kwargs['norm_flag'], 
+                    device=kwargs['device']).to(kwargs['device'])
 
     t_dsnvae = DSNVAE(shared_encoder=shared_encoder,
                     decoder=shared_decoder,
@@ -674,7 +675,8 @@ def train_code_adv_vae(s_dataloaders, t_dataloaders, **kwargs):
                     latent_dim=kwargs['latent_dim'],
                     hidden_dims=kwargs['encoder_hidden_dims'],
                     dop=kwargs['dop'],
-                    norm_flag=kwargs['norm_flag']).to(kwargs['device'])
+                    norm_flag=kwargs['norm_flag'], 
+                    device=kwargs['device']).to(kwargs['device'])
 
     # used as critic in the GAN training
     critic_input_dim = kwargs['latent_dim'] if kwargs['only_shared'] else kwargs['latent_dim'] * 2
