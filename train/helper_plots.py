@@ -73,8 +73,8 @@ def plot_histories_gan(histories,
     
     # plot error pretrain adversarial network
     if variational_flag:
-        name_title_loss = "Recons Ortho and MMD"
-        plot_training_loss(histories[0]['MMD_loss'], pretrain_num_epochs, save_folder = save_folder, custom_label="MMD (Pretrain)")
+        name_title_loss = "Recons Ortho and KL div"
+        plot_training_loss(histories[0]['kl_div'], pretrain_num_epochs, save_folder = save_folder, custom_label="KL div (Pretrain)")
     else:
         name_title_loss = "Recons and Ortho"
 
@@ -84,7 +84,7 @@ def plot_histories_gan(histories,
 
     # plot error train adversarial network
     if variational_flag:
-        plot_training_loss(histories[3]['MMD_loss'], train_num_epochs, save_folder = save_folder, custom_label="MMD (Train GAN)")
+        plot_training_loss(histories[3]['kl_div'], train_num_epochs, save_folder = save_folder, custom_label="KL div (Train GAN)")
     
     plot_training_loss(histories[2]['critic_loss'], train_num_epochs, save_folder = save_folder, custom_label="Critic (Train GAN)")    
     histories[3]['tot_loss'] = [x + y for x, y in zip(histories[3]['gen_loss'], histories[3]['loss'])]

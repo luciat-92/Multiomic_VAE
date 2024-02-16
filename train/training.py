@@ -121,6 +121,7 @@ if __name__ == '__main__':
     parser.add_argument('--samples', dest='samples', nargs='?', default='',
                        choices=['', 'tcgaonly'])
     parser.add_argument('--ngene', dest='ngene', nargs='?', default='all')
+    parser.add_argument('--beta', dest='beta', nargs='?', type=float, default=0.0005)
     parser.add_argument('--folder', dest='folder', nargs='?', default='.')
     norm_feat_group = parser.add_mutually_exclusive_group(required=False)
     norm_feat_group.add_argument('--norm_feat', dest='norm_feat', action='store_true')
@@ -143,9 +144,10 @@ if __name__ == '__main__':
         "samples": [args.samples],
         "ngene": [args.ngene],
         "norm_feat_flag": [args.norm_feat], 
-        "only_shared": [args.only_shared]
+        "only_shared": [args.only_shared],
+        "beta": [args.beta]
     }
-
+    # note: folders without anything are beta = 0.0005
     keys, values = zip(*params_grid.items())
     update_params_dict_list = [dict(zip(keys, v)) for v in itertools.product(*values)]
 

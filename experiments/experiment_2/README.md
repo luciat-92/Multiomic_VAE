@@ -6,15 +6,16 @@
 ```bash
 python train/training.py \
     --folder experiment_2 \
-    --gex_feature_file='/group/iorio/lucia/Multiomic_VAE/data/preprocessed/gene_expression_all.csv.gz' \
-    --ngene='all' \
+    --gex_feature_file='/group/iorio/lucia/Multiomic_VAE/data/preprocessed/gene_expression_var1000.csv.gz' \
+    --ngene='var1000' \
     --no-norm_feat \
-    --only_shared \
-    --method='vae_gan'
+    --no-only_shared \
+    --method='vae_gan' \
+    --beta=0.001
 ```
 
 ## Run with sbatch
 To run all the configurations (samples / feature normalization / n. of genes) use:
 ```bash
-sbatch scripts/train_vae_gan.sbatch
+sbatch scripts/train_vae_gan.sbatch # beta not specified: is based on 0.0005
 ```

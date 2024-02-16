@@ -27,7 +27,8 @@ python train/training.py \
     --ngene='var1000' \
     --no-norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 2
 python train/training.py \
@@ -36,7 +37,8 @@ python train/training.py \
     --ngene='var1000' \
     --norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
     
 # test 3
 python train/training.py \
@@ -45,7 +47,8 @@ python train/training.py \
     --ngene='var5000' \
     --no-norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 4
 python train/training.py \
@@ -54,7 +57,8 @@ python train/training.py \
     --ngene='var5000' \
     --norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 5
 python train/training.py \
@@ -63,7 +67,8 @@ python train/training.py \
     --ngene='all' \
     --no-norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 6
 python train/training.py \
@@ -72,7 +77,8 @@ python train/training.py \
     --ngene='all' \
     --norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # all samples, only shared encoder for the critic
 # test 1
@@ -82,7 +88,8 @@ python train/training.py \
     --ngene='var1000' \
     --no-norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 2
 python train/training.py \
@@ -91,7 +98,8 @@ python train/training.py \
     --ngene='var1000' \
     --norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
  
 # test 3
 python train/training.py \
@@ -100,7 +108,8 @@ python train/training.py \
     --ngene='var5000' \
     --no-norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 4
 python train/training.py \
@@ -109,7 +118,8 @@ python train/training.py \
     --ngene='var5000' \
     --norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 5
 python train/training.py \
@@ -118,7 +128,8 @@ python train/training.py \
     --ngene='all' \
     --no-norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 6
 python train/training.py \
@@ -127,7 +138,8 @@ python train/training.py \
     --ngene='all' \
     --norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # only tcga samples, not using the shared encoder for the critic
 # test 1
@@ -138,7 +150,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --no-norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 2
 python train/training.py \
@@ -148,7 +161,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 3
 python train/training.py \
@@ -158,7 +172,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --no-norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 4
 python train/training.py \
@@ -168,7 +183,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 5
 python train/training.py \
@@ -178,7 +194,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --no-norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 6
 python train/training.py \
@@ -188,7 +205,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --norm_feat \
     --no-only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # only tcga samples, only shared encoder for the critic
 # test 1
@@ -199,7 +217,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --no-norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 2
 python train/training.py \
@@ -209,7 +228,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 3
 python train/training.py \
@@ -219,7 +239,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --no-norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 4
 python train/training.py \
@@ -229,7 +250,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 5
 python train/training.py \
@@ -239,7 +261,8 @@ python train/training.py \
     --samples='tcgaonly' \
     --no-norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 # test 6
 python train/training.py \
@@ -249,6 +272,7 @@ python train/training.py \
     --samples='tcgaonly' \
     --norm_feat \
     --only_shared \
-    --method='vae_gan'
+    --method='vae_gan' \
+    --beta=0.0001
 
 
