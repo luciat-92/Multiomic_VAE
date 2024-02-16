@@ -1,25 +1,42 @@
 library(umap)
 library(ggplot2)
+library(RColorBrewer)
 library(dplyr)
 library(tidyverse)
-library(RColorBrewer)
+library(ggpubr)
+library(argparse)
 
-# load results
-setwd("/Volumes/iorio/lucia/Multiomic_VAE/output/")
+# load input with args
+parser <- ArgumentParser(description = "")
+parser$add_argument("--folder_model", type = "character", help = "Input and Output fold")
+parser$add_argument("--depmap_meta_file", type = "character", help = "file depmap info")
+args <- parser$parse_args()
+print(args)
 
-folder_model <- "model_save/code_adv_norm/pretrain_num_epochs_500_train_num_epochs_1000_dop_0.0_samples__ngene_all_norm_feat_flag_False/"
-umap_df <- read_csv(sprintf("%s/umap.csv", folder_model))
-depmap_sample_df <- read_csv("/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv")
-enc_df <- read_csv(sprintf("%s/encoded_features.csv", folder_model))
+folder_model <- args$folder_model
+depmap_meta_file <- args$depmap_meta_file
+
+###########
+folder_model <- "experiments/experiment_2/vae_gan/samples_tcgaonly_ngene_var1000_norm_feat_flag_False_only_shared_True/"
+depmap_meta_file <- "/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv"
+###########
+
+print("Start")
+
+umap_df <- readr::read_csv(sprintf("%s/plots/umap.csv", folder_model))
+depmap_sample_df <- readr::read_csv(depmap_meta_file)
+enc_df <- readr::read_csv(sprintf("%s/encoded_features.csv", folder_model))
 
 # refactor type, first xena then depmap
 umap_df <- umap_df %>% 
   mutate(type = factor(type, levels = c("xena", "depmap"))) %>%
   arrange(type) %>%
   mutate(study = ifelse(study == "CL_depmap", "Cell Line - DepMap", paste0("Tissue - ", study))) %>%
-  filter(!is.na(site))
+  filter(!is.na(site)) %>%
+  rename(sample_type = !!("_sample_type"))
 
-pl <- ggplot(subset(umap_df), aes(x = umap_1, y = umap_2, color = study, size = type)) + 
+pl1 <- ggplot(subset(umap_df), 
+             aes(x = umap_1, y = umap_2, color = study, size = type)) + 
   geom_point(alpha = 0.5) +
   scale_size_manual(values = c(0.2, 1)) +
   scale_color_manual(values = c("#e8702a", "#6bd2db", "#9ed670", "#0c457d")) +
@@ -35,16 +52,7 @@ pl <- ggplot(subset(umap_df), aes(x = umap_1, y = umap_2, color = study, size = 
   xlab("UMAP 1") +
   ylab("UMAP 2") +
   guides(size = 'none')
-pl
-ggsave(sprintf("%s/umap_study_ggplot2.png", folder_model), pl, width = 6, height = 6)
-
-umap_df <- umap_df %>% 
-  mutate(
-    site = case_when(site %in% c("White blood cell", "Myeloid", "Lymphoid") ~ "Immune cells", 
-                     site %in% c("Bladder", "Bladder/Urinary Tract") ~ "Bladder/Urinary Tract",
-                     site %in% c("Rectum", "Colon", "Bowel") ~ "Colon/Rectum",
-                     TRUE ~ site)
-  )
+ggsave(sprintf("%s/plots/umap_study_ggplot2.png", folder_model), pl1, width = 6, height = 6)
 
 # select random colors
 n_colors <- length(unique(umap_df$site))
@@ -52,7 +60,7 @@ all_c <- colors()
 set.seed(12344)
 colors <- sample(all_c[!grepl("grey", all_c) & !grepl("gray", all_c)], n_colors)
 
-pl <- ggplot(umap_df, 
+pl2 <- ggplot(subset(umap_df), 
              aes(x = umap_1, y = umap_2, size = type)) + 
   geom_point(aes(fill = site, color = type), shape = 21, alpha = 0.8) + 
   scale_size_manual(values = c(0.7, 1)) +
@@ -69,8 +77,8 @@ pl <- ggplot(umap_df,
   xlab("UMAP 1") +
   ylab("UMAP 2") + 
   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
-pl
-ggsave(sprintf("%s/umap_site_ggplot2.png", folder_model), pl, width = 8, height = 6.2)
+ggsave(sprintf("%s/plots/umap_site_ggplot2.png", folder_model), pl2, width = 8, height = 6.2)
+# ggarrange(plotlist = list(pl1, pl2), nrow = 1)
 
 # # compute correlation among encoded features
 # cor_enc_df <- cor(t(enc_df[, -1]))
@@ -159,18 +167,7 @@ colnames(dist_enc) <- enc_df$sample_id
 rownames(dist_enc) <- enc_df$sample_id
 
 sample_df <- umap_df %>%
-  dplyr::select(-umap_1, -umap_2) %>%
-  dplyr::rename(sample_type = !!("_sample_type")) %>%
-  dplyr::mutate(sample_type = case_when(
-    sample_type == "Solid Tissue Normal" ~ "Normal Tissue",
-    sample_type %in% c("Primary Solid Tumor", "Additional - New Primary") ~ "Primary Tumor",
-    sample_type == "Recurrent Solid Tumor" ~ "Recurrent Tumor",
-    sample_type == "Additional Metastatic" ~ "Metastatic",
-    sample_type %in% c("Primary Blood Derived Cancer - Peripheral Blood", "Primary Blood Derived Cancer - Bone Marrow") ~ "Primary Blood Derived Cancer",
-    sample_type %in% c("Recurrent Blood Derived Cancer - Bone Marrow", "Recurrent Blood Derived Cancer - Peripheral Blood") ~ "Recurrent Blood Derived Cancer",
-    sample_type %in% c("Post treatment Blood Cancer - Bone Marrow", "Post treatment Blood Cancer - Peripheral Blood", "Post treatment Blood Cancer - Blood") ~ "Post treatment Blood Cancer",
-    TRUE ~ sample_type
-  ))
+  dplyr::select(-umap_1, -umap_2)
 
 sample_df <- sample_df %>%
   dplyr::mutate(sample_type_macro = case_when(
@@ -179,6 +176,9 @@ sample_df <- sample_df %>%
     sample_type %in% c("Primary Blood Derived Cancer", "Recurrent Blood Derived Cancer", "Post treatment Blood Cancer") ~ "Blood Tumor",
     TRUE ~ sample_type
   ))
+id_depmap <- sample_df$type == "depmap"
+id_all_CL <- which(id_depmap)
+
 sample_df$sample_type_macro[id_depmap] <- "Solid Tumor"
 sample_df$sample_type_macro[sample_df$sample_id %in% depmap_sample_df$ModelID[depmap_sample_df$OncotreePrimaryDisease == "Non-Cancerous"]] <- "Non-cancerous"
 sample_df$sample_type_macro[id_depmap & sample_df$site == "Immune cells"] <- "Blood Tumor"
@@ -187,15 +187,13 @@ common_s <- intersect(sample_df$sample_id, enc_df$sample_id)
 sample_df <- sample_df[match(common_s, sample_df$sample_id), ]
 dist_enc <- dist_enc[common_s, common_s]
 
-id_depmap <- sample_df$type == "depmap"
-id_all_CL <- which(id_depmap)
-
 df_auc_site <- list()
 df_auc_study <- list()
 df_auc_type <- list()
 
 for(i in 1:length(id_all_CL)){
-
+  
+  # print(i)
   idx <- id_all_CL[i]
   id_CL <- sample_df$sample_id[idx]
   curr_dist <- dist_enc[id_CL, ]
@@ -216,7 +214,7 @@ for(i in 1:length(id_all_CL)){
                        CI_up = as.numeric(ci)[3], 
                        comp = "study", 
                        sample_id = id_CL, 
-                       sample_info = curr_t)
+                       sample_info = sample_df$site[idx])
   
   # categorize based on site
   curr_t <- sample_df$site[idx]
@@ -268,7 +266,7 @@ for(i in 1:length(id_all_CL)){
     df_auc_type[[i]] <- data.frame(CI_low = NA, 
                                    AUC = NA, 
                                    CI_up = NA, 
-                                   comp = "site", 
+                                   comp = "type", 
                                    sample_id = id_CL, 
                                    sample_info = curr_t, 
                                    sample_type_macro = curr_tm)
@@ -278,7 +276,7 @@ df_auc_site <- do.call(rbind, df_auc_site)
 df_auc_study <- do.call(rbind, df_auc_study)
 df_auc_type <- do.call(rbind, df_auc_type)
 
-plot_auc_pertissue <- function(df_auc, title_pl){
+plot_auc_pertissue <- function(df_auc, title_pl, folder_model, save_csv = TRUE){
   
   # drop NA (not the same site name between tissue and cell lines)
   df_auc <- df_auc[!is.na(df_auc$AUC), ]
@@ -299,6 +297,10 @@ plot_auc_pertissue <- function(df_auc, title_pl){
   print(pl)
   ggsave(sprintf("%s/boxplotAUC_CLs_pertissue_%s.pdf", folder_model, gsub(" ", "_", title_pl)), 
          pl, width = 6, height = 4.5)
+  if(save_csv){
+    write.csv(df_auc, sprintf("%s/AUC_CLs_pertissue_%s.csv", folder_model, gsub(" ", "_", title_pl)), 
+              row.names = F)
+  }
   
   if( "sample_type_macro" %in% colnames(df_auc)){
     
@@ -318,11 +320,28 @@ plot_auc_pertissue <- function(df_auc, title_pl){
    print(pl2)
    ggsave(sprintf("%s/boxplotAUC_CLs_pertype_%s.pdf", folder_model, gsub(" ", "_", title_pl)), 
           pl2, width =4.56, height = 4.5)
+   if(save_csv){
+     write.csv(df_auc, sprintf("%s/AUC_CLs_pertype_%s.csv", folder_model, gsub(" ", "_", title_pl)), 
+               row.names = F)
+   }
   }
   
 }
 
-plot_auc_pertissue(df_auc_site, "Same tissue")
-plot_auc_pertissue(df_auc_study, "Same study")
-plot_auc_pertissue(df_auc_type, "Same type")
+plot_auc_pertissue(df_auc_site, "Same tissue", sprintf("%s/plots/", folder_model))
+plot_auc_pertissue(df_auc_study, "Same study", sprintf("%s/plots/", folder_model))
+plot_auc_pertissue(df_auc_type, "Same type", sprintf("%s/plots/", folder_model))
+
+## load results
+#folder_model_1 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_True_only_shared_True/"
+#folder_model_2 <- "experiments/experiment_2/vae_gan/samples__ngene_all_norm_feat_flag_True_only_shared_False/"
+#
+#df_auc_site_1 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_tissue.csv", folder_model_1)) %>%
+#  dplyr::mutate(model = "ae_nonorm_only_shared")
+#
+#df_auc_site_2 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_tissue.csv", folder_model_2)) %>%
+#  mutate(model = "vae_norm_noonly_shared")
+#
+#df_auc_site_tot <- rbind(df_auc_site_1, df_auc_site_2)
+#boxplot(df_auc_site_tot$AUC ~ df_auc_site_tot$model)
 

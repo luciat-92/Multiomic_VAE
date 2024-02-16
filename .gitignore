@@ -1,2 +1,7 @@
 logs/*
-code/__pycache__/*
+_old/*
+*/__pycache__/*
+data/raw/*
+data/preprocessed/*
+experiments/*/*/*
+.DS_Store

@@ -1,58 +1,27 @@
-
-import random
+import sys, os
+sys.path.insert(0, os.getcwd())
 import torch
 import numpy as np
-import os
 import gzip
 import pandas as pd
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from torch.utils.data import TensorDataset, DataLoader
 
+from utils.utils import *
+import utils.config as config
+from data.preprocessing_gex import load_data
 
 # load data sample
-ROOT = "/group/iorio/lucia/"
-FOLD_PROJECT = os.path.join(ROOT, "Multiomic_VAE/")
-xena_folder = os.path.join(ROOT, "datasets/XENA/TCGA_TARGET_GTEx/")
-xena_sample_file = os.path.join(xena_folder, 'TcgaTargetGTEX_phenotype.txt.gz')
-depmap_folder = os.path.join(ROOT, "datasets/DEPMAP_PORTAL/version_23Q2/")
-depmap_sample_file = os.path.join(depmap_folder, "Model.csv")
-# load tissue data
-with gzip.open(xena_sample_file) as f:
-    xena_sample_df = pd.read_csv(f, sep='\t', index_col=0, encoding='ISO-8859-1')
-xena_sample_df.index.name = 'sample_id'
-# load depmap data
-depmap_sample_df = pd.read_csv(depmap_sample_file, sep=',', index_col=0)
-depmap_sample_df.index.name = 'sample_id'
+output_gex = load_data(load_gex = False)
+depmap_sample_df = output_gex[2]
+xena_sample_df = output_gex[3]
 
-# correct site annotation
-map_common_annotation = {"Vagina":"Vulva/Vagina", 
-                         "Thyroid Gland": "Thyroid", 
-                         "SympatheticÊNervous System": "Peripheral Nervous System", 
-                         "Stomach" : "Esophagus/Stomach",
-                         "Soft tissue,Bone" : "Soft Tissue", 
-                         "Head and Neck region" : "Head and Neck", 
-                         "Paraganglia" : "Peripheral Nervous System", 
-                         "Ovary" : "Ovary/Fallopian Tube", 
-                         "Lymphoid" : "White blood cell", 
-                         "Fallopian Tube" : "Ovary/Fallopian Tube", 
-                         "Esophagus" : "Esophagus/Stomach", 
-                         "Cervix Uteri" : "Cervix", 
-                         "Brain" : "CNS/Brain", 
-                         "Adrenal gland" : "Adrenal Gland",
-                         "Myeloid" : "White blood cell", 
-                         "Bladder/Urinary Tract": "Bladder", 
-                         "Bile duct": "Biliary Tract"}
-depmap_sample_df['OncotreePrimaryDisease'] = depmap_sample_df['OncotreePrimaryDisease'].replace(map_common_annotation)
-xena_sample_df["_primary_site"] = xena_sample_df["_primary_site"].replace(map_common_annotation)
-
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.device_count() > 0:
-        torch.cuda.manual_seed_all(seed)
-        
-def get_unlabeled_dataloaders(gene_df, depmap_sample_df, xena_sample_df, seed, batch_size, normalize_features=False):
+def get_dataloaders(gene_df, 
+                    depmap_sample_df, 
+                    xena_sample_df, 
+                    seed, 
+                    batch_size, 
+                    normalize_features=False):
     
     set_seed(seed)
     # filter samples based on the combined dataset intersection
@@ -97,7 +66,7 @@ def get_unlabeled_dataloaders(gene_df, depmap_sample_df, xena_sample_df, seed, b
         stratify=xena_sample_df['primary disease or tissue'],
         random_state=seed)
 
-    # prepare data for VAE, torch.from_numpy converts numpy array to torch tensor without copying the underlying data
+    # prepare data for AE, torch.from_numpy converts numpy array to torch tensor without copying the underlying data
     xena_dataset = TensorDataset(
         torch.from_numpy(xena_df.values.astype('float32'))
     )
@@ -116,9 +85,10 @@ def get_unlabeled_dataloaders(gene_df, depmap_sample_df, xena_sample_df, seed, b
     xena_dataloader = DataLoader(xena_dataset,
                                  batch_size=batch_size,
                                  shuffle=True)
-    train_xena_dataloader = DataLoader(train_xena_dateset,
-                                       batch_size=batch_size,
-                                       shuffle=True)
+    # not used now! trained on the entire set
+    #train_xena_dataloader = DataLoader(train_xena_dateset,
+    #                                   batch_size=batch_size,
+    #                                   shuffle=True)
     test_xena_dataloader = DataLoader(test_xena_dateset,
                                       batch_size=batch_size,
                                       shuffle=True)
@@ -127,10 +97,11 @@ def get_unlabeled_dataloaders(gene_df, depmap_sample_df, xena_sample_df, seed, b
                                   batch_size=batch_size,
                                   shuffle=True,
                                   drop_last=True) # drop the last batch if the sample size is lower than the settled batch size
-    train_depmap_dataloader = DataLoader(train_depmap_dateset,
-                                       batch_size=batch_size,
-                                       shuffle=True, 
-                                       drop_last=True)
+    # not used now! trained on the entire set
+    #train_depmap_dataloader = DataLoader(train_depmap_dateset,
+    #                                   batch_size=batch_size,
+    #                                   shuffle=True, 
+    #                                   drop_last=True)
     test_depmap_dataloader = DataLoader(test_depmap_dateset,
                                       batch_size=batch_size,
                                       shuffle=True)
