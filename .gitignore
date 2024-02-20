@@ -4,4 +4,5 @@ _old/*
 data/raw/*
 data/preprocessed/*
 experiments/*/*/*
+experiments/*.txt
 .DS_Store

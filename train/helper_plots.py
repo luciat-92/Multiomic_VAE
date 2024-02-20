@@ -116,7 +116,7 @@ def plot_umap(umap_df, save_folder):
     plt.ylabel("UMAP Dimension 2", fontsize=10)
     plt.legend(fontsize=6, title_fontsize=6, loc="upper left", bbox_to_anchor=(1.05, 1))
     # save plot
-    plt.savefig(save_folder / 'umap_lineage.pdf', format = 'pdf', bbox_inches='tight')
+    plt.savefig(f'{save_folder}umap_lineage.pdf', format = 'pdf', bbox_inches='tight')
 
     plt.figure(figsize=(5, 5))
     sns.scatterplot(data=umap_df, x='umap_1', y='umap_2', hue='study', style='type', markers = ['o', '.'], alpha = 0.4, linewidth=0.1)
@@ -124,16 +124,30 @@ def plot_umap(umap_df, save_folder):
     plt.xlabel("UMAP Dimension 1", fontsize=10)
     plt.ylabel("UMAP Dimension 2", fontsize=10)
     plt.legend(fontsize=6, title_fontsize=6, loc="upper left", bbox_to_anchor=(1.05, 1))
-    plt.savefig(save_folder / 'umap_study.pdf', format = 'pdf', bbox_inches='tight')
+    plt.savefig(f'{save_folder}umap_study.pdf', format = 'pdf', bbox_inches='tight')
 
-def get_umap(encoded_features, depmap_sample_df, xena_sample_df, save_folder, make_plot = True):
+def get_umap(encoded_features, save_folder, depmap_sample_df = None, xena_sample_df = None, make_plot = True):
 
-    depmap_sample_df['type'] = 'depmap'
-    depmap_sample_df['study'] = 'CL_depmap'
-    xena_sample_df['type'] = 'xena'
-    t1 = depmap_sample_df[["type", "Sex", "OncotreeLineage", "study"]].rename(columns={"Sex":"sex", "OncotreeLineage":"site"})
-    t2 = xena_sample_df[["type", "_primary_site", "_gender", "_study", "_sample_type"]].rename(columns={"_primary_site": "site", "_gender":"sex", "_study":"study"})
-    tot_sample_df = pd.concat([t1, t2], axis=0, sort=False)
+    if depmap_sample_df is not None and xena_sample_df is not None:
+        add_save = ""
+        depmap_sample_df['type'] = 'depmap'
+        depmap_sample_df['study'] = 'CL_depmap'
+        xena_sample_df['type'] = 'xena'
+        t1 = depmap_sample_df[["type", "Sex", "OncotreeLineage", "study"]].rename(columns={"Sex":"sex", "OncotreeLineage":"site"})
+        t2 = xena_sample_df[["type", "_primary_site", "_gender", "_study", "_sample_type"]].rename(columns={"_primary_site": "site", "_gender":"sex", "_study":"study"})
+        tot_sample_df = pd.concat([t1, t2], axis=0, sort=False)
+    elif depmap_sample_df is not None:
+        add_save = "depmap_"
+        depmap_sample_df['type'] = 'depmap'
+        depmap_sample_df['study'] = 'CL_depmap'
+        tot_sample_df = depmap_sample_df[["type", "Sex", "OncotreeLineage", "study"]].rename(columns={"Sex":"sex", "OncotreeLineage":"site"})
+    elif xena_sample_df is not None:
+        add_save = "xena_"
+        xena_sample_df['type'] = 'xena'
+        tot_sample_df = xena_sample_df[["type", "_primary_site", "_gender", "_study", "_sample_type"]].rename(columns={"_primary_site": "site", "_gender":"sex", "_study":"study"})
+    else:
+        raise ValueError('You should provide at least one of the two dataframes: depmap_sample_df or xena_sample_df')
+
     # order tot_sample_df according tmp
     tot_sample_df = tot_sample_df.loc[encoded_features.index]
     embedding = umap.UMAP().fit_transform(encoded_features)
@@ -141,10 +155,10 @@ def get_umap(encoded_features, depmap_sample_df, xena_sample_df, save_folder, ma
     umap_df = pd.concat([umap_df, tot_sample_df], axis = 1)
     # save
     safe_create_dir(save_folder)
-    umap_df.to_csv(save_folder / 'umap.csv')
+    umap_df.to_csv(f'{save_folder}/{add_save}umap.csv')
     # plot
     if make_plot:
-        plot_umap(umap_df = umap_df, save_folder = save_folder)
+        plot_umap(umap_df = umap_df, save_folder = f'{save_folder}/{add_save}')
 
     return umap_df
 

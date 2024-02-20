@@ -82,7 +82,7 @@ def main(args, update_params_dict):
 
     # start unlabeled training
     logger.info(training_params)
-    encoder, historys = train_fn(s_dataloaders=s_dataloaders,
+    encoder, private_encoder_t, private_encoder_s, historys = train_fn(s_dataloaders=s_dataloaders,
                                  t_dataloaders=t_dataloaders,
                                  **training_params)
     logger.info(f'Trained model')
@@ -105,14 +105,26 @@ def main(args, update_params_dict):
     enc_xena = generate_encoded_features(encoder, t_dataloaders, variational_flag=var_flag)
     enc_tot = pd.concat([enc_depmap, enc_xena], axis = 0, sort = False)
     enc_tot.to_csv(training_params['model_save_folder'] / 'encoded_features.csv')
+
+    enc_p_depmap = generate_encoded_features(private_encoder_s, s_dataloaders, variational_flag=var_flag)
+    enc_p_xena = generate_encoded_features(private_encoder_t, t_dataloaders, variational_flag=var_flag)
+    enc_p_tot = pd.concat([enc_p_depmap, enc_p_xena], axis = 0, sort = False)
+    enc_p_tot.to_csv(training_params['model_save_folder'] / 'private_encoded_features.csv')
     logger.info(f'Saved new encoded features')
 
     # plot umap
     umap_df = get_umap(encoded_features = enc_tot, 
                        depmap_sample_df = data_loader.depmap_sample_df, 
                        xena_sample_df = data_loader.xena_sample_df, 
-                       save_folder = training_params['model_save_folder'] / 'plots', 
+                       save_folder = training_params['model_save_folder'] / 'plots/', 
                        make_plot = True)
+    
+    umap_p_df = get_umap(encoded_features = enc_p_tot, 
+                    depmap_sample_df = data_loader.depmap_sample_df, 
+                    xena_sample_df = data_loader.xena_sample_df, 
+                    save_folder = training_params['model_save_folder'] / 'plots/private/', 
+                    make_plot = True)
+
     logger.info(f'Saved UMAP plot')
 
 if __name__ == '__main__':
@@ -140,13 +152,22 @@ if __name__ == '__main__':
     #     "train_num_epochs": [100, 200, 300, 500, 750, 1000, 1500, 2000, 2500, 3000],
     #     "dop": [0.0, 0.1]
     # }
-    params_grid = {
-        "samples": [args.samples],
-        "ngene": [args.ngene],
-        "norm_feat_flag": [args.norm_feat], 
-        "only_shared": [args.only_shared],
-        "beta": [args.beta]
-    }
+    if args.method == 'ae_gan':
+        params_grid = {
+            "samples": [args.samples],
+            "ngene": [args.ngene],
+            "norm_feat_flag": [args.norm_feat], 
+            "only_shared": [args.only_shared],
+        }
+    else:
+         params_grid = {
+            "samples": [args.samples],
+            "ngene": [args.ngene],
+            "norm_feat_flag": [args.norm_feat], 
+            "only_shared": [args.only_shared],
+            "beta": [args.beta]
+        }
+
     # note: folders without anything are beta = 0.0005
     keys, values = zip(*params_grid.items())
     update_params_dict_list = [dict(zip(keys, v)) for v in itertools.product(*values)]

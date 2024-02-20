@@ -13,6 +13,7 @@ mamba install -c conda-forge umap-learn
 mamba install datashader bokeh holoviews colorcet scikit-image # for umap plot
 mamba install -c plotly plotly=5.18.0
 mamba install -c conda-forge python-kaleido
+mamba install openpyxl # to open excel
 mamba env export | grep -v "prefix" > environment.yml # to export 
 ```
 

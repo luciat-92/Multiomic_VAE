@@ -413,7 +413,7 @@ def train_code_adv(s_dataloaders, t_dataloaders, **kwargs):
         except FileNotFoundError:
             raise Exception("No pre-trained encoder")
 
-    return t_dsnae.shared_encoder, (dsnae_train_history, dsnae_val_history, critic_train_history, gen_train_history)
+    return t_dsnae.shared_encoder, t_dsnae.private_encoder, s_dsnae.private_encoder, (dsnae_train_history, dsnae_val_history, critic_train_history, gen_train_history)
 
 
 ################## FUNCTIONS BASED ON VAE MODEL CLASS ##################
@@ -788,4 +788,4 @@ def train_code_adv_vae(s_dataloaders, t_dataloaders, **kwargs):
         except FileNotFoundError:
             raise Exception("No pre-trained encoder")
 
-    return t_dsnvae.shared_encoder, (dsnvae_train_history, dsnvae_val_history, critic_train_history, gen_train_history)
+    return t_dsnvae.shared_encoder, t_dsnvae.private_encoder, s_dsnvae.private_encoder, (dsnvae_train_history, dsnvae_val_history, critic_train_history, gen_train_history)
