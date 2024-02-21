@@ -1,4 +1,4 @@
-library(umap)
+#library(umap)
 library(ggplot2)
 library(RColorBrewer)
 library(dplyr)
@@ -10,22 +10,42 @@ library(argparse)
 parser <- ArgumentParser(description = "")
 parser$add_argument("--folder_model", type = "character", help = "Input and Output fold")
 parser$add_argument("--depmap_meta_file", type = "character", help = "file depmap info")
+parser$add_argument("--file_purity", type = "character", help = "file with tumour purity")
+parser$add_argument("--private_enc", type = "logical", default = FALSE, help = "if the encoding is private")
 args <- parser$parse_args()
 print(args)
 
 folder_model <- args$folder_model
 depmap_meta_file <- args$depmap_meta_file
+file_purity <- args$file_purity
+private_enc <- args$private_enc
 
 ###########
-folder_model <- "experiments/experiment_2/vae_gan/samples_tcgaonly_ngene_var1000_norm_feat_flag_False_only_shared_True/"
-depmap_meta_file <- "/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv"
+#folder_model <- "/Volumes/iorio/lucia/Multiomic_VAE/experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False_only_shared_True/"
+#depmap_meta_file <- "/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv"
+#file_purity = "/Volumes/iorio/lucia/Multiomic_VAE/data/raw/41467_2015_BFncomms9971_MOESM1236_ESM.xlsx"
+#private_enc = FALSE
 ###########
 
 print("Start")
 
-umap_df <- readr::read_csv(sprintf("%s/plots/umap.csv", folder_model))
+# read data
+df_sheet <- readxl::read_xlsx(file_purity, sheet="Supp Data 1", skip=3) %>% 
+  rename_all(tolower) %>% 
+  rename_all(~ gsub(" ", "_", .)) %>%
+  mutate(estimate = as.numeric(estimate)) %>%
+  mutate(sample_id = gsub(".$", "", sample_id)) # remove last charachter!
+
 depmap_sample_df <- readr::read_csv(depmap_meta_file)
-enc_df <- readr::read_csv(sprintf("%s/encoded_features.csv", folder_model))
+if(private_enc){
+  umap_df <- readr::read_csv(sprintf("%s/plots/private/umap.csv", folder_model))
+  enc_df <- readr::read_csv(sprintf("%s/private_encoded_features.csv", folder_model))
+  fold_plot_output <- sprintf("%s/plots/private/", folder_model)
+} else {
+  umap_df <- readr::read_csv(sprintf("%s/plots/umap.csv", folder_model))
+  enc_df <- readr::read_csv(sprintf("%s/encoded_features.csv", folder_model))
+  fold_plot_output <- sprintf("%s/plots/", folder_model)
+}
 
 # refactor type, first xena then depmap
 umap_df <- umap_df %>% 
@@ -34,6 +54,9 @@ umap_df <- umap_df %>%
   mutate(study = ifelse(study == "CL_depmap", "Cell Line - DepMap", paste0("Tissue - ", study))) %>%
   filter(!is.na(site)) %>%
   rename(sample_type = !!("_sample_type"))
+# merge with tumour purity
+umap_df <- umap_df %>% 
+  left_join(df_sheet %>% select(sample_id, estimate), by = "sample_id")
 
 pl1 <- ggplot(subset(umap_df), 
              aes(x = umap_1, y = umap_2, color = study, size = type)) + 
@@ -52,7 +75,8 @@ pl1 <- ggplot(subset(umap_df),
   xlab("UMAP 1") +
   ylab("UMAP 2") +
   guides(size = 'none')
-ggsave(sprintf("%s/plots/umap_study_ggplot2.png", folder_model), pl1, width = 6, height = 6)
+# pl1
+ggsave(sprintf("%s/umap_study_ggplot2.png", fold_plot_output), pl1, width = 6, height = 6)
 
 # select random colors
 n_colors <- length(unique(umap_df$site))
@@ -77,7 +101,47 @@ pl2 <- ggplot(subset(umap_df),
   xlab("UMAP 1") +
   ylab("UMAP 2") + 
   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
-ggsave(sprintf("%s/plots/umap_site_ggplot2.png", folder_model), pl2, width = 8, height = 6.2)
+# pl2
+ggsave(sprintf("%s/umap_site_ggplot2.png", fold_plot_output), pl2, width = 8, height = 6.2)
+
+pl3 <- ggplot(subset(umap_df, type == "xena"), 
+              aes(x = umap_1, y = umap_2, size = type)) + 
+  geom_point(aes(fill = sample_type, color = type), shape = 21, alpha = 0.8) + 
+  scale_size_manual(values = c(0.7, 1)) +
+  scale_color_manual(values = c("transparent", "black")) +
+  # scale_fill_manual(values = colors) +
+  theme_classic() + 
+  theme(legend.title = element_blank(),
+        legend.position = "right",
+        legend.text = element_text(size = 10), 
+        # reduce legend spacing
+        legend.key.height = unit(0.1, "cm"),  
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12)) +
+  xlab("UMAP 1") +
+  ylab("UMAP 2") + 
+  guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl3
+ggsave(sprintf("%s/umap_sampletype_ggplot2.png", fold_plot_output), pl3, width = 8, height = 6.2)
+
+pl4 <- ggplot(subset(umap_df, !is.na(estimate)), 
+              aes(x = umap_1, y = umap_2, color = estimate)) + 
+  geom_point(alpha = 0.5, size = 0.3) + 
+  # scale_fill_manual(values = colors) +
+  scale_color_gradient2(low = "blue", mid = "grey80", high = "red", midpoint = mean(umap_df$estimate, na.rm = T))+
+  theme_classic() + 
+  theme(legend.position = "right",
+        legend.text = element_text(size = 10), 
+        # reduce legend spacing
+        legend.key.height = unit(0.5, "cm"),  
+        axis.title = element_text(size = 14),
+        axis.text = element_text(size = 12)) +
+  xlab("UMAP 1") +
+  ylab("UMAP 2") + 
+  # change legend title
+  guides(color = guide_colorbar(title = "Tumour Purity"))
+# pl4
+ggsave(sprintf("%s/umap_tumourpurity_ggplot2.png", fold_plot_output), pl4, width = 8, height = 6.2)
 # ggarrange(plotlist = list(pl1, pl2), nrow = 1)
 
 # # compute correlation among encoded features
@@ -168,6 +232,8 @@ rownames(dist_enc) <- enc_df$sample_id
 
 sample_df <- umap_df %>%
   dplyr::select(-umap_1, -umap_2)
+common_s <- intersect(sample_df$sample_id, enc_df$sample_id)
+sample_df <- sample_df[match(common_s, sample_df$sample_id), ]
 
 sample_df <- sample_df %>%
   dplyr::mutate(sample_type_macro = case_when(
@@ -183,8 +249,6 @@ sample_df$sample_type_macro[id_depmap] <- "Solid Tumor"
 sample_df$sample_type_macro[sample_df$sample_id %in% depmap_sample_df$ModelID[depmap_sample_df$OncotreePrimaryDisease == "Non-Cancerous"]] <- "Non-cancerous"
 sample_df$sample_type_macro[id_depmap & sample_df$site == "Immune cells"] <- "Blood Tumor"
 
-common_s <- intersect(sample_df$sample_id, enc_df$sample_id)
-sample_df <- sample_df[match(common_s, sample_df$sample_id), ]
 dist_enc <- dist_enc[common_s, common_s]
 
 df_auc_site <- list()
@@ -328,9 +392,9 @@ plot_auc_pertissue <- function(df_auc, title_pl, folder_model, save_csv = TRUE){
   
 }
 
-plot_auc_pertissue(df_auc_site, "Same tissue", sprintf("%s/plots/", folder_model))
-plot_auc_pertissue(df_auc_study, "Same study", sprintf("%s/plots/", folder_model))
-plot_auc_pertissue(df_auc_type, "Same type", sprintf("%s/plots/", folder_model))
+plot_auc_pertissue(df_auc_site, "Same tissue", fold_plot_output)
+plot_auc_pertissue(df_auc_study, "Same study", fold_plot_output)
+plot_auc_pertissue(df_auc_type, "Same type", fold_plot_output)
 
 ## load results
 #folder_model_1 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_True_only_shared_True/"
