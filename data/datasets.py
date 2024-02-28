@@ -16,32 +16,70 @@ output_gex = load_data(load_gex = False)
 depmap_sample_df = output_gex[2]
 xena_sample_df = output_gex[3]
 
-def get_dataloaders(gene_df, 
-                    depmap_sample_df, 
+def get_dataloaders(depmap_sample_df,
                     xena_sample_df, 
                     seed, 
                     batch_size, 
-                    normalize_features=False):
+                    gene_df = None,
+                    meth_df = None,
+                    data_type = 'both',
+                    normalize_features=False, 
+                    norm_type='zscore'):
     
+    print("Loading data")
+    # concatenate gene and methylation data (if requested)
+    if (gene_df is None) & (meth_df is None):
+        raise ValueError('At least one of gene_df and meth_df should be provided')
+    elif (gene_df is not None) & (meth_df is not None):
+        # get common samples located in the first column
+        common_samples = gene_df.index.intersection(meth_df.index)
+        gene_df = gene_df.loc[common_samples]
+        meth_df = meth_df.loc[common_samples]
+        meth_df = meth_df.groupby(meth_df.index).mean() # remove duplicates if present
+        if data_type == 'both':
+            print('Concatenating gene and methylation data')
+            tot_df = pd.concat([gene_df, meth_df], axis=1)
+        elif data_type == 'gene':
+            print('Consider only gene data')
+            tot_df = gene_df
+        elif data_type == 'methyl':
+            print('Consider only methylation data')
+            tot_df = meth_df
+        else:
+            raise ValueError(f'Data type {data_type} not supported')
+    elif gene_df is not None:
+        tot_df = gene_df
+    else:
+        meth_df = meth_df.groupby(meth_df.index).mean()
+        tot_df = meth_df
+
     set_seed(seed)
     # filter samples based on the combined dataset intersection
     xena_sample_df = xena_sample_df.dropna(subset=['primary disease or tissue'])
     depmap_sample_df = depmap_sample_df.dropna(subset = ['OncotreePrimaryDisease'])
     
-    depmap_samples = depmap_sample_df.index.intersection(gene_df.index)
-    xena_samples = xena_sample_df.index.intersection(gene_df.index)
+    depmap_samples = depmap_sample_df.index.intersection(tot_df.index)
+    xena_samples = xena_sample_df.index.intersection(tot_df.index)
 
     # match all the resources
     depmap_sample_df = depmap_sample_df.loc[depmap_samples]
     xena_sample_df = xena_sample_df.loc[xena_samples]
 
-    # filter gene_df for both depmap and xena samples
-    gene_df = gene_df.loc[depmap_samples.union(xena_samples)]
-    # normalize features
+    # filter tot_df for both depmap and xena samples
+    tot_df = tot_df.loc[depmap_samples.union(xena_samples)]
+    # # normalize features
     if normalize_features:
-        gene_df = (gene_df - gene_df.mean()) / gene_df.std()
-    depmap_df = gene_df.loc[depmap_samples]
-    xena_df = gene_df.loc[xena_samples]
+        if norm_type == 'zscore':
+            tot_df = (tot_df - tot_df.mean()) / tot_df.std()
+        elif norm_type == 'minmax':
+             tot_df = (tot_df - tot_df.min()) / (tot_df.max() - tot_df.min())
+        else:
+            raise ValueError(f'Normalization type {norm_type} not supported')
+        
+    depmap_df = tot_df.loc[depmap_samples]
+    xena_df = tot_df.loc[xena_samples]
+
+    print(f'Loaded CL data with shape: {depmap_df.shape} and patient data with shape: {xena_df.shape}')
 
     # exclude samples with only one sample per disease 
     excluded_depmap_samples = []

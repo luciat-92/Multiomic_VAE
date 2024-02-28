@@ -21,7 +21,7 @@ file_purity <- args$file_purity
 private_enc <- args$private_enc
 
 ###########
-#folder_model <- "/Volumes/iorio/lucia/Multiomic_VAE/experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_False_only_shared_True/"
+#folder_model <- "/Volumes/iorio/lucia/Multiomic_VAE/experiments/experiment_2/vae_gan/samples__ngene_var5000_norm_feat_flag_False_only_shared_True_beta_0.001/"
 #depmap_meta_file <- "/Volumes/iorio/lucia/datasets/DEPMAP_PORTAL/version_23Q2/Model.csv"
 #file_purity = "/Volumes/iorio/lucia/Multiomic_VAE/data/raw/41467_2015_BFncomms9971_MOESM1236_ESM.xlsx"
 #private_enc = FALSE
@@ -65,9 +65,9 @@ pl1 <- ggplot(subset(umap_df),
   scale_color_manual(values = c("#e8702a", "#6bd2db", "#9ed670", "#0c457d")) +
   theme_classic() + 
   theme(legend.title = element_blank(),
-        legend.position = c(0.99, .05),
-        legend.justification = c("right", "bottom"),
-        legend.box.just = "right",
+        legend.position = c(0.001, .001),
+        legend.justification = c("left", "bottom"),
+        legend.box.just = "left",
         legend.margin = margin(6, 6, 6, 6), 
         axis.title = element_text(size = 14),
         axis.text = element_text(size = 12), 
@@ -76,6 +76,7 @@ pl1 <- ggplot(subset(umap_df),
   ylab("UMAP 2") +
   guides(size = 'none')
 # pl1
+pl1
 ggsave(sprintf("%s/umap_study_ggplot2.png", fold_plot_output), pl1, width = 6, height = 6)
 
 # select random colors
@@ -101,8 +102,175 @@ pl2 <- ggplot(subset(umap_df),
   xlab("UMAP 1") +
   ylab("UMAP 2") + 
   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+pl2
 # pl2
 ggsave(sprintf("%s/umap_site_ggplot2.png", fold_plot_output), pl2, width = 8, height = 6.2)
+
+######################################
+##### PLOTS FOR OT PRESENTATION ######
+# #####################################
+# xena_info <- read.table("/Volumes/iorio/lucia/datasets/XENA/TCGA_TARGET_GTEx/TcgaTargetGTEX_phenotype.txt.gz", sep = "\t", h=T, stringsAsFactors = F)
+# umap_df_tot <- umap_df %>% 
+#   left_join(xena_info %>% select(sample, detailed_category), by = c("sample_id" = "sample")) %>%
+#   left_join(depmap_sample_df, by = c("sample_id" = "ModelID")) %>%
+#   mutate(detailed_category = case_when(
+#     type == "xena" ~ detailed_category,
+#     type != "xena" ~ OncotreeLineage
+#   )) %>%
+#   rename(detailed_category_old = detailed_category) %>%
+#   mutate(detailed_category = case_when(
+#     detailed_category_old == "Cells - Ebv-Transformed Lymphocytes" ~ "Cells - Ebv-Transformed\nLymphocytes",
+#     grepl("Brain - ", detailed_category_old) ~ "Brain",
+#     TRUE ~ detailed_category_old
+#   ))
+# 
+# pl2_ex1 <- ggplot(subset(umap_df_tot, umap_2 < -0.5 & umap_2 > -2.5 & umap_1 < 2.1), 
+#               aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = detailed_category, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.7, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl2_ex1
+# ggsave(sprintf("%s/umap_site_ggplot2_example1.png", fold_plot_output), pl2_ex1, width = 5, height = 4.2)
+# 
+# pl2_ex2 <- ggplot(subset(umap_df_tot, umap_2 > 9 & umap_2 < 10.5 & umap_1 > 0 & umap_1 < 2), 
+#                   aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = detailed_category, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.7, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl2_ex2
+# ggsave(sprintf("%s/umap_site_ggplot2_example2.png", fold_plot_output), pl2_ex2, width = 5, height = 4.2)
+# 
+# pl2_ex3 <- ggplot(subset(umap_df_tot, umap_2 > 9.6 & umap_2 < 9.9 & umap_1 > 2 & umap_1 < 4), 
+#                   aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = detailed_category, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.7, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl2_ex3
+# ggsave(sprintf("%s/umap_site_ggplot2_example3.png", fold_plot_output), pl2_ex3, width = 5, height = 4.2)
+# 
+# pl2_ex4 <- ggplot(subset(umap_df_tot, umap_2 > 10.5 & umap_1 > 4 & umap_1 < 9), 
+#                   aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = site, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.9, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl2_ex4
+# ggsave(sprintf("%s/umap_site_ggplot2_example4.png", fold_plot_output), pl2_ex4, width = 5, height = 4.2)
+# 
+# pl3_ex4 <- ggplot(subset(umap_df_tot, umap_2 > 10.5 & umap_1 > 4 & umap_1 < 9), 
+#                   aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = sample_type, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.9, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl3_ex4
+# ggsave(sprintf("%s/umap_sampletype_ggplot2_example4.png", fold_plot_output), pl3_ex4, width = 5, height = 4.2)
+# 
+# umap_df_tot <- umap_df_tot %>%
+#   mutate(detailed_category_ex5 = case_when(
+#     detailed_category %in% c("Brain", "Lung", "Brain Lower Grade Glioma", "CNS/Brain", "Glioblastoma Multiforme", "Lung") ~ detailed_category,
+#     TRUE ~ "Other"
+#   ))
+# 
+# pl2_ex5 <- ggplot(subset(umap_df_tot, umap_2 > 5 & umap_2 < 9 & umap_1 < -0.5), 
+#                   aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = detailed_category_ex5, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.9, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl2_ex5
+# ggsave(sprintf("%s/umap_site_ggplot2_example5.png", fold_plot_output), pl2_ex5, width = 6, height = 4.2)
+# 
+# pl3_ex5 <- ggplot(subset(umap_df_tot, umap_2 > 5 & umap_2 < 9 & umap_1 < -0.5), 
+#                   aes(x = umap_1, y = umap_2, size = type)) + 
+#   geom_point(aes(fill = sample_type, color = type), shape = 21, alpha = 0.8) + 
+#   scale_size_manual(values = c(0.9, 1)) +
+#   scale_color_manual(values = c("transparent", "black")) +
+#   # scale_fill_manual(values = colors) +
+#   theme_classic() + 
+#   theme(legend.title = element_blank(),
+#         legend.position = "right",
+#         legend.text = element_text(size = 10), 
+#         # reduce legend spacing
+#         legend.key.height = unit(0.1, "cm"),  
+#         axis.title = element_text(size = 14),
+#         axis.text = element_text(size = 12)) +
+#   xlab("UMAP 1") +
+#   ylab("UMAP 2") + 
+#   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
+# pl3_ex5
+# ggsave(sprintf("%s/umap_sampletype_ggplot2_example5.png", fold_plot_output), pl3_ex5, width = 5, height = 4.2)
+# #############################################
+
 
 pl3 <- ggplot(subset(umap_df, type == "xena"), 
               aes(x = umap_1, y = umap_2, size = type)) + 
@@ -121,7 +289,7 @@ pl3 <- ggplot(subset(umap_df, type == "xena"),
   xlab("UMAP 1") +
   ylab("UMAP 2") + 
   guides(fill = guide_legend(ncol = 1), size = 'none', color = 'none')
-# pl3
+pl3
 ggsave(sprintf("%s/umap_sampletype_ggplot2.png", fold_plot_output), pl3, width = 8, height = 6.2)
 
 pl4 <- ggplot(subset(umap_df, !is.na(estimate)), 
@@ -140,7 +308,7 @@ pl4 <- ggplot(subset(umap_df, !is.na(estimate)),
   ylab("UMAP 2") + 
   # change legend title
   guides(color = guide_colorbar(title = "Tumour Purity"))
-# pl4
+pl4
 ggsave(sprintf("%s/umap_tumourpurity_ggplot2.png", fold_plot_output), pl4, width = 8, height = 6.2)
 # ggarrange(plotlist = list(pl1, pl2), nrow = 1)
 
@@ -395,17 +563,3 @@ plot_auc_pertissue <- function(df_auc, title_pl, folder_model, save_csv = TRUE){
 plot_auc_pertissue(df_auc_site, "Same tissue", fold_plot_output)
 plot_auc_pertissue(df_auc_study, "Same study", fold_plot_output)
 plot_auc_pertissue(df_auc_type, "Same type", fold_plot_output)
-
-## load results
-#folder_model_1 <- "experiments/experiment_1/ae_gan/samples__ngene_all_norm_feat_flag_True_only_shared_True/"
-#folder_model_2 <- "experiments/experiment_2/vae_gan/samples__ngene_all_norm_feat_flag_True_only_shared_False/"
-#
-#df_auc_site_1 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_tissue.csv", folder_model_1)) %>%
-#  dplyr::mutate(model = "ae_nonorm_only_shared")
-#
-#df_auc_site_2 <- read.csv(sprintf("%s/plots/AUC_CLs_pertissue_Same_tissue.csv", folder_model_2)) %>%
-#  mutate(model = "vae_norm_noonly_shared")
-#
-#df_auc_site_tot <- rbind(df_auc_site_1, df_auc_site_2)
-#boxplot(df_auc_site_tot$AUC ~ df_auc_site_tot$model)
-

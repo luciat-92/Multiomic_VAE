@@ -27,7 +27,7 @@ def main(args, update_params_dict):
         train_fn = train_code.train_code_adv
         var_flag = False
     else:
-        if args.method == 'vae_gan':
+        if (args.method == 'vae_gan') | (args.method == 'mvae_gan'):
             train_fn = train_code.train_code_adv_vae
             var_flag = True
         else:
@@ -36,9 +36,30 @@ def main(args, update_params_dict):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     logger.info(f'Using device: {device}')
 
-    with gzip.open(args.gex_feature_file) as f:
-        gene_df = pd.read_csv(f, sep=',', index_col=0)
-    logger.info(f'Loaded gene_df with shape {gene_df.shape}')
+    if args.gex_feature_file is not None:
+        with gzip.open(args.gex_feature_file) as f:
+            gene_df = pd.read_csv(f, sep=',', index_col=0)
+        logger.info(f'Loaded gene_df with shape {gene_df.shape}')
+        if args.data_type == 'both' or args.data_type == 'gene':
+            n_g = gene_df.shape[-1]
+        else:
+            n_g = 0
+    else:
+        gene_df = None
+        n_g = 0
+
+    if args.meth_feature_file is not None:
+        with gzip.open(args.meth_feature_file) as f:
+            meth_df = pd.read_csv(f, sep=',', index_col=0)
+        logger.info(f'Loaded meth_df with shape {meth_df.shape}')
+        n_m = meth_df.shape[-1]
+        if args.data_type == 'both' or args.data_type == 'methyl':
+            n_m = meth_df.shape[-1]
+        else:
+            n_m = 0
+    else:
+        meth_df = None
+        n_m = 0
     
     with open(str2path('experiments/train_params.json'), 'r') as f:
         training_params = json.load(f)
@@ -46,11 +67,13 @@ def main(args, update_params_dict):
     training_params.update(update_params_dict)
     param_str = dict_to_str(update_params_dict)
     method_save_folder = config.RESULTS_DIR / args.folder / f'{args.method}'
+    if args.data_type != 'both':
+        method_save_folder = method_save_folder / f'{args.data_type}'
 
     training_params.update(
         {
             "device": device,
-            "input_dim": gene_df.shape[-1],
+            "input_dim": n_g + n_m,
             'model_save_folder': method_save_folder / param_str
         })
     
@@ -65,11 +88,14 @@ def main(args, update_params_dict):
     logger.info(f'Feature normalization: {args.norm_feat}')
     s_dataloaders, t_dataloaders = data_loader.get_dataloaders(
         gene_df = gene_df,
+        meth_df = meth_df, 
+        data_type=args.data_type,
         depmap_sample_df = data_loader.depmap_sample_df,
         xena_sample_df = data_loader.xena_sample_df,
         seed=2024,
         batch_size=training_params['batch_size'], 
-        normalize_features = args.norm_feat
+        normalize_features = args.norm_feat, 
+        norm_type = args.norm_type
     )
     logger.info(f'Loaded dataloaders with s_dataloaders: {len(s_dataloaders[0])} and t_dataloaders: {len(t_dataloaders[0])}')
     # check the shape of the data (TODO: remove this part later on)
@@ -129,11 +155,14 @@ def main(args, update_params_dict):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('training and evaluation')
-    parser.add_argument('--gex_feature_file', dest='gex_feature_file', nargs='?')
+    parser.add_argument('--gex_feature_file', dest='gex_feature_file', nargs='?', default=None)
+    parser.add_argument('--meth_feature_file', dest='meth_feature_file', nargs='?', default=None)
     parser.add_argument('--samples', dest='samples', nargs='?', default='',
                        choices=['', 'tcgaonly'])
-    parser.add_argument('--ngene', dest='ngene', nargs='?', default='all')
+    parser.add_argument('--nfeat', dest='nfeat', nargs='?', default='all')
     parser.add_argument('--beta', dest='beta', nargs='?', type=float, default=0.0005)
+    parser.add_argument('--data_type', dest='data_type', nargs='?', default='both', 
+                        choices=['gene', 'methyl', 'both'])
     parser.add_argument('--folder', dest='folder', nargs='?', default='.')
     norm_feat_group = parser.add_mutually_exclusive_group(required=False)
     norm_feat_group.add_argument('--norm_feat', dest='norm_feat', action='store_true')
@@ -143,8 +172,10 @@ if __name__ == '__main__':
     shared_group.add_argument('--only_shared', dest='only_shared', action='store_true')
     shared_group.add_argument('--no-only_shared', dest='only_shared', action='store_false')
     parser.set_defaults(only_shared=False)
+    parser.add_argument('--norm_type', dest='norm_type', nargs='?', default='zscore',
+                       choices=['zscore', 'minmax'])
     parser.add_argument('--method', dest='method', nargs='?', default='ae_gan',
-                        choices=['ae_gan', 'vae_gan'])
+                        choices=['ae_gan', 'vae_gan', 'mvae_gan'])
     
     args = parser.parse_args()
     # params_grid = {
@@ -155,15 +186,17 @@ if __name__ == '__main__':
     if args.method == 'ae_gan':
         params_grid = {
             "samples": [args.samples],
-            "ngene": [args.ngene],
+            "nfeat": [args.nfeat],
             "norm_feat_flag": [args.norm_feat], 
+            "norm_type": [args.norm_type], 
             "only_shared": [args.only_shared],
         }
     else:
          params_grid = {
             "samples": [args.samples],
-            "ngene": [args.ngene],
+            "nfeat": [args.nfeat],
             "norm_feat_flag": [args.norm_feat], 
+            "norm_type": [args.norm_type], 
             "only_shared": [args.only_shared],
             "beta": [args.beta]
         }

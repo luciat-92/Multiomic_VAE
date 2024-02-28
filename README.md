@@ -28,13 +28,19 @@ mamba env export | grep -v "prefix" > environment.yml # to export
 
 ## Usage:
 1. *data preparation*:
-    - python data/preprocessing_gex.py: preprocess the data and save it in data/processed/ (this is done only once)
+    - python data/preprocessing_gex.py: preprocess the gene expression and save it in data/processed/ (this is done only once)
+    - sbatch scripts/preproc_methyl.sbatch: preprocess the methylation and save it in data/processed/ (this is done only once)
 2. *training*:
+    Each sbatch include multiple configurations with different hyperparameters, the hyperparameter beta controlling VAE is set externally
     - sbatch scripts/train_ae_gan.sbatch  # train with gene expression data and autoencoder
-    - sbatch scripts/train_vae_gan.sbatch # train with gene expression data and variational autoencoder
+    - sbatch scripts/train_vae_gan_beta<>.sbatch # train with gene expression data and variational autoencoder
+    - sbatch scripts/train_mvae_gan_beta<>.sbatch  # train with gene expression and methylation data and variational autoencoder
 3. *evaluation*: 
     Evaluate results based on tissue information, tissue type (solid, blood and non-cancerous) and study type (depmap, tgca, gtex)
     - sbatch scripts/eval_ae_gan.sbatch  # train with gene expression data and autoencoder
-    - sbatch scripts/eval_vae_gan.sbatch # train with gene expression data and variational autoencoder
-    - summary of evaluations at experiments/compare_experiments.R
+    - sbatch scripts/eval_vae_gan_beta<>.sbatch # train with gene expression data and variational autoencoder
+    - sbatch scripts/eval_mvae_gan_beta<>.sbatch  # train with gene expression and methylation data and variational autoencoder
+    - summary of evaluations at experiments/compare_experiments.R # compare results from ex1 and ex2
+    - summary of evaluations at experiments/compare_experiments_ex3.R # compare results from ex3
+    - plot of correlation between latent space and original features: experiments/plot_corr_encoded_space.R # 
 

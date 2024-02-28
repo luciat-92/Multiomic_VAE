@@ -119,12 +119,10 @@ def plot_summary_CL_vs_tissue(depmap_gene_df_match, xena_gene_df_match, save_fol
         get_mean_std_cv(xena_gene_df_match), 
         on = 'id', 
         suffixes=('_depmap', '_xena'))
-
     # change the size of the plot
     fig_size = (12, 4) 
     fig, axes = plt.subplots(1,3, figsize=fig_size)
     # plt.rcParams['figure.figsize'] = [14, 4]
-
     sns.scatterplot(data = df_summary, x = "cv_depmap", y = "cv_xena", size = 0.5, alpha = 0.5, ax = axes[0])
     sns.scatterplot(data = df_summary, x = "mean_depmap", y = "mean_xena", size = 0.5, alpha = 0.5, ax = axes[1])
     sns.scatterplot(data = df_summary, x = "std_depmap", y = "std_xena", size = 0.5, alpha = 0.5, ax = axes[2])
@@ -144,13 +142,11 @@ def plot_summary_CL_vs_tissue(depmap_gene_df_match, xena_gene_df_match, save_fol
     axes[1].set_title("Mean")
     axes[2].set_title("Standard deviation")
     plt.tight_layout()
-
     safe_create_dir(save_folder)
     plt.savefig(save_folder / 'GEX_compare_distributions.pdf', format = 'pdf')
 
 
 def load_data(load_gex = True):
-
     XENA_FOLDER = PERSONAL_DATA_DIR / 'XENA/TCGA_TARGET_GTEx/' 
     XENA_GENE_FILE = XENA_FOLDER / 'TcgaTargetGtex_rsem_gene_tpm'
     # XENA_GENE_FILE = XENA_FOLDER / 'TEST_rsem_gene_tpm'
@@ -159,9 +155,7 @@ def load_data(load_gex = True):
     DEPMAP_FOLDER = PERSONAL_DATA_DIR / 'DEPMAP_PORTAL/version_23Q2/'
     DEPMAP_GENE_FILE = DEPMAP_FOLDER / 'OmicsExpressionProteinCodingGenesTPMLogp1.csv'  
     DEPMAP_SAMPLE_FILE = DEPMAP_FOLDER / 'Model.csv'
-
     HGNC_GENE_ANN_FILE = PERSONAL_DATA_DIR / 'hgnc_complete_set_202311.txt'
-
     ## load data ##
     if load_gex:
         # gene annotation
@@ -180,15 +174,12 @@ def load_data(load_gex = True):
         depmap_gene_df = None
         xena_gene_mapping_df = None
         xena_gene_df = None
-
     depmap_sample_df = pd.read_csv(DEPMAP_SAMPLE_FILE, sep=',', index_col=0)
     depmap_sample_df.index.name = 'sample_id'
-
     # load tissue data
     with gzip.open(XENA_SAMPLE_FILE) as f:
         xena_sample_df = pd.read_csv(f, sep='\t', index_col=0, encoding='ISO-8859-1')
     xena_sample_df.index.name = 'sample_id'
-    
     # correct site and type annotation
     type_harmonization_names = {
         "Solid Tissue Normal": "Normal Tissue", 
@@ -204,7 +195,6 @@ def load_data(load_gex = True):
         "Post treatment Blood Cancer - Peripheral Blood": "Post treatment Blood Cancer", 
         "Post treatment Blood Cancer - Blood": "Post treatment Blood Cancer"
     }
-
     site_harmonization_names = {
         "Vagina":"Vulva/Vagina", 
         "Thyroid Gland": "Thyroid", 
@@ -231,7 +221,6 @@ def load_data(load_gex = True):
     depmap_sample_df = harmonize_names(depmap_sample_df, 'OncotreeLineage', site_harmonization_names)
     xena_sample_df = harmonize_names(xena_sample_df, '_primary_site', site_harmonization_names)
     xena_sample_df = harmonize_names(xena_sample_df, '_sample_type', type_harmonization_names)
-
     return hgnc_gene_ann_df, depmap_gene_df, depmap_sample_df, xena_sample_df, xena_gene_mapping_df, xena_gene_df
 
 
@@ -247,10 +236,8 @@ def match_and_filter_genes(depmap_gene_df, hgnc_gene_ann_df, xena_gene_mapping_d
         gene_id = parts[1].strip()
         gene_names.append(gene_name)
         gene_ids.append(gene_id)
-
     # Create a DataFrame with the gene names and gene IDs as columns
     df = pd.DataFrame({'gene_name': gene_names, 'entrez_id': gene_ids})
-
     # match with hgnc
     df['entrez_id'] = df['entrez_id'].astype('float64')
     match_df = pd.merge(df, 
@@ -259,18 +246,15 @@ def match_and_filter_genes(depmap_gene_df, hgnc_gene_ann_df, xena_gene_mapping_d
     # match with xena gene mapping
     xena_gene_mapping_df['ensembl_gene_id'] = xena_gene_mapping_df['id'].str.split('.').str[0]
     match_df = pd.merge(match_df, xena_gene_mapping_df, on = 'ensembl_gene_id')
-
     # remvoe duplicates and modify names
     match_df = match_df.drop_duplicates(subset=["ensembl_gene_id"])
     match_df['depmap_gene_id'] = match_df['gene_name'] + " (" + match_df['entrez_id'].astype('int').astype('str') + ")"
     match_df['xena_gene_id'] = match_df['id']
     match_df['complete_id'] = match_df['symbol'] + " (" + match_df['ensembl_gene_id'] + ")"
-
     # create a new data frame from depmap_gene_df, keep only those genes that have a value in depmap_id in match_df
     depmap_gene_df_match = depmap_gene_df[match_df['depmap_gene_id']]
     depmap_gene_df_match.columns = match_df['complete_id']
     depmap_gene_df_match.columns.name = None
-
     # create a new data frame from xena_gene_df, keep only those genes that have a value in xena_id in match_df
     xena_gene_df_match = xena_gene_df.loc[match_df['xena_gene_id'], :]
     # transpose xena_gene_df_match
@@ -281,13 +265,10 @@ def match_and_filter_genes(depmap_gene_df, hgnc_gene_ann_df, xena_gene_mapping_d
     # convert entries in xena_gene_df_match: computed as log2(x+0.001) but should be log2(x+1)
     xena_gene_df_match = np.log2(np.power(2, xena_gene_df_match) - 0.001 + 1)
     xena_gene_df_match[xena_gene_df_match.abs() < 10**-7] = 0
-
     # create final table (samples x genes)
     tot_gene_df = pd.concat([depmap_gene_df_match, xena_gene_df_match], axis=0, sort=False)
-
     #### PLOT ####
     plot_summary_CL_vs_tissue(depmap_gene_df_match, xena_gene_df_match, DATA_DIR / 'preprocessed/plots/')
-
     return tot_gene_df
 
 def main():
