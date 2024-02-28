@@ -44,3 +44,7 @@ mamba env export | grep -v "prefix" > environment.yml # to export
     - summary of evaluations at experiments/compare_experiments_ex3.R # compare results from ex3
     - plot of correlation between latent space and original features: experiments/plot_corr_encoded_space.R # 
 
+#### Additional information:
+In OpenTarget presentation of 28/02/2024 shown:
+- VAE gene expression: experiments/experiments_2/vae_gan/samples__ngene_var5000_norm_feat_flag_False_only_shared_True_beta_0.001/
+- VAE gene expression and methylation: experiments/experiment_3/mvae_gan/samples_tcgaonly_nfeat_var5000_norm_feat_flag_False_norm_type_zscore_only_shared_True_beta_0.0005/
