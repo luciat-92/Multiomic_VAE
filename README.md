@@ -18,7 +18,7 @@ mamba env export | grep -v "prefix" > environment.yml # to export
 ```
 
 ## Structure:
-- `data/`: contains the data used for training and testing
+- `data/`: contains the data used for training
 - `experiments/`: each subdirectory corresponds to a different experiment or model variation 
 - `models/`: contains files for the model architecture
 - `utils/`: contains utility functions for configuration, logging, and visualization and additional utilities (e.g. seed fixing)
